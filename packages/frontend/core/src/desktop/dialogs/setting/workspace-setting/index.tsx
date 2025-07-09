@@ -94,12 +94,13 @@ export const useWorkspaceSettingList = (): SettingSidebarItem[] => {
         icon: <CollaborationIcon />,
         testId: 'workspace-setting:members',
       },
-      {
-        key: 'workspace:integrations',
-        title: t['com.affine.integration.integrations'](),
-        icon: <IntegrationsIcon />,
-        testId: 'workspace-setting:integrations',
-      },
+      // Integrations panel disabled
+      // {
+      //   key: 'workspace:integrations',
+      //   title: t['com.affine.integration.integrations'](),
+      //   icon: <IntegrationsIcon />,
+      //   testId: 'workspace-setting:integrations',
+      // },
       {
         key: 'workspace:embedding',
         title:

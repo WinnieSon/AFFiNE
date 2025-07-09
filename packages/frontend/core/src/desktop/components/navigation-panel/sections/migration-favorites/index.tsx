@@ -14,6 +14,9 @@ import { NavigationPanelTreeRoot } from '../../tree';
 import * as styles from './styles.css';
 
 export const NavigationPanelMigrationFavorites = () => {
+  // Migration favorites disabled
+  return null;
+  
   const t = useI18n();
 
   const { migrationFavoriteItemsAdapter, docsService } = useServices({

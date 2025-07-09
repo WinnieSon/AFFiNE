@@ -124,20 +124,21 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     }
 
 
-    settings.push(
-      {
-        key: 'experimental-features',
-        title: t['com.affine.settings.workspace.experimental-features'](),
-        icon: <ExperimentIcon />,
-        testId: 'experimental-features-trigger',
-      },
-      {
-        key: 'about',
-        title: t['com.affine.aboutAFFiNE.title'](),
-        icon: <InformationIcon />,
-        testId: 'about-panel-trigger',
-      }
-    );
+    // Experimental Features and About panels disabled
+    // settings.push(
+    //   {
+    //     key: 'experimental-features',
+    //     title: t['com.affine.settings.workspace.experimental-features'](),
+    //     icon: <ExperimentIcon />,
+    //     testId: 'experimental-features-trigger',
+    //   },
+    //   {
+    //     key: 'about',
+    //     title: t['com.affine.aboutAFFiNE.title'](),
+    //     icon: <InformationIcon />,
+    //     testId: 'about-panel-trigger',
+    //   }
+    // );
     return settings;
   }, [
     t,

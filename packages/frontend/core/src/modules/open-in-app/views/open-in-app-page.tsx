@@ -91,9 +91,7 @@ export const OpenInAppPage = ({
           </a>
         </div>
 
-        <Button onClick={openDownloadLink}>
-          {t['com.affine.auth.open.affine.download-app']()}
-        </Button>
+        {/* Download app button disabled */}
       </div>
 
       <div className={styles.centerContent}>

@@ -34,14 +34,8 @@ export const useSignOut = ({
     onConfirm?.()?.catch(console.error);
     try {
       await authService.signOut();
-      if (
-        defaultServerService.server.config$.value.allowGuestDemoWorkspace !==
-        false
-      ) {
-        jumpToIndex();
-      } else {
-        jumpToSignIn();
-      }
+      // Always redirect to sign-in page after logout
+      jumpToSignIn();
     } catch (err) {
       console.error(err);
       const error = UserFriendlyError.fromAny(err);

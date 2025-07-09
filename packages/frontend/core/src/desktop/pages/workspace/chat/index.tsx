@@ -263,7 +263,7 @@ export const Component = () => {
 
   return (
     <>
-      <ViewTitle title={t['AFFiNE AI']()} />
+      <ViewTitle title={t['Palcon AI']()} />
       <ViewIcon icon="ai" />
       <ViewHeader>
         <div className={styles.chatHeader}>
