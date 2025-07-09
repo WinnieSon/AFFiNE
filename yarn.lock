@@ -1485,25 +1485,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop@npm:1.4.0":
-  version: 1.4.0
-  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:1.4.0"
+"@atlaskit/pragmatic-drag-and-drop@npm:^1.4.0, @atlaskit/pragmatic-drag-and-drop@npm:^1.6.0":
+  version: 1.7.4
+  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:1.7.4"
   dependencies:
     "@babel/runtime": "npm:^7.0.0"
     bind-event-listener: "npm:^3.0.0"
     raf-schd: "npm:^4.0.3"
-  checksum: 10/fff053f94428fbb6fc6e7ce6b7a0a0d469c7f33dd726e8705245ca517c9224a0d08d972cf739a095c96580c5221514b3c80a04ac5222d2c91a28a8c346d3a7e5
-  languageName: node
-  linkType: hard
-
-"@atlaskit/pragmatic-drag-and-drop@patch:@atlaskit/pragmatic-drag-and-drop@npm%3A1.4.0#~/.yarn/patches/@atlaskit-pragmatic-drag-and-drop-npm-1.4.0-75c45f52d3.patch":
-  version: 1.4.0
-  resolution: "@atlaskit/pragmatic-drag-and-drop@patch:@atlaskit/pragmatic-drag-and-drop@npm%3A1.4.0#~/.yarn/patches/@atlaskit-pragmatic-drag-and-drop-npm-1.4.0-75c45f52d3.patch::version=1.4.0&hash=9e529b"
-  dependencies:
-    "@babel/runtime": "npm:^7.0.0"
-    bind-event-listener: "npm:^3.0.0"
-    raf-schd: "npm:^4.0.3"
-  checksum: 10/4376cd2dfe2771081b601ce33d79ec2d2f412739bfa096b6f7bc098cca73659e2ae84ef69f4632f03708b814ed920794fbf9e1826c92c042d397597098de1f6b
+  checksum: 10/97fca7f48e6e0bb18ba01ad7637237f0fe28f654686e3c26d77027556c9a2f6f7a07c9af58facd1e0dcc84c1106b4ab341c609865a10762dfaa3ae1922d4c355
   languageName: node
   linkType: hard
 

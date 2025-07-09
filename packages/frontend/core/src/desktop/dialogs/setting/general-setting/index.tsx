@@ -6,7 +6,6 @@ import { useI18n } from '@affine/i18n';
 import {
   AppearanceIcon,
   ExperimentIcon,
-  FolderIcon,
   InformationIcon,
   KeyboardIcon,
   MeetingIcon,
@@ -20,7 +19,6 @@ import { AuthService, ServerService } from '../../../../modules/cloud';
 import type { SettingSidebarItem, SettingState } from '../types';
 import { AboutAffine } from './about';
 import { AppearanceSettings } from './appearance';
-import { BackupSettingPanel } from './backup';
 import { BillingSettings } from './billing';
 import { EditorSettings } from './editor';
 import { ExperimentalFeatures } from './experimental-features';
@@ -125,14 +123,6 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       }
     }
 
-    if (BUILD_CONFIG.isElectron) {
-      settings.push({
-        key: 'backup',
-        title: t['com.affine.settings.workspace.backup'](),
-        icon: <FolderIcon />,
-        testId: 'backup-panel-trigger',
-      });
-    }
 
     settings.push(
       {
@@ -186,8 +176,6 @@ export const GeneralSetting = ({
       return <BillingSettings onChangeSettingState={onChangeSettingState} />;
     case 'experimental-features':
       return <ExperimentalFeatures />;
-    case 'backup':
-      return <BackupSettingPanel />;
     default:
       return null;
   }

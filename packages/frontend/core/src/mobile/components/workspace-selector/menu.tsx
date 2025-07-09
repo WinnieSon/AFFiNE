@@ -341,13 +341,14 @@ export const SelectorMenu = ({ onClose }: { onClose?: () => void }) => {
             onClickWorkspace={handleClickWorkspace}
           />
         </FrameworkScope>
-        {(localWorkspaces.length > 0 || selfhostServers.length > 0) && (
+        {selfhostServers.length > 0 && (
           <Divider size="thinner" />
         )}
-        <LocalWorkspaces
+        {/* Local workspaces disabled */}
+        {/* <LocalWorkspaces
           workspaces={localWorkspaces}
           onClickWorkspace={handleClickWorkspace}
-        />
+        /> */}
         {selfhostServers.length > 0 && <Divider size="thinner" />}
 
         {/* 3. selfhost */}
