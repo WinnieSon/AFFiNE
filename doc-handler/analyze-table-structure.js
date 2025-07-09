@@ -19,7 +19,7 @@ const password = 'pro';
 
 // Target workspace and document
 const workspaceId = '49086e68-e27d-409a-9940-abb4d5d3802d';
-const docId = 'f5e8d8c1-4e7c-4cab-8603-b26ae94f0ca9';
+const docId = '0ad6fc3f-46fe-4645-bdc2-b1e1bd396b19';
 
 // Helper function to make HTTP requests
 function makeRequest(options, data = null, binary = false) {

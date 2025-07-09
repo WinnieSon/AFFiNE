@@ -14,7 +14,7 @@ const password = 'pro';
 
 // Document to read
 const workspaceId = '49086e68-e27d-409a-9940-abb4d5d3802d';
-const docId = '4539dc36-0775-4641-a679-3ce20048f791';
+const docId = '0ad6fc3f-46fe-4645-bdc2-b1e1bd396b19';
 
 // Helper function to make HTTP requests
 function makeRequest(options, data = null) {
