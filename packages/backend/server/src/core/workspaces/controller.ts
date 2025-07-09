@@ -1,4 +1,16 @@
-import { Controller, Get, Logger, Param, Query, Res } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Post,
+  Put,
+  Query,
+  Res,
+} from '@nestjs/common';
 import type { Response } from 'express';
 
 import {
@@ -7,6 +19,7 @@ import {
   CommentAttachmentNotFound,
   DocHistoryNotFound,
   DocNotFound,
+  EventBus,
   InvalidHistoryTimestamp,
 } from '../../base';
 import { DocMode, Models, PublicDocMode } from '../../models';
@@ -16,6 +29,7 @@ import { DocReader } from '../doc/reader';
 import { AccessController } from '../permission';
 import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
+import { CreateDocDto, UpdateDocDto } from './dto';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {
@@ -26,7 +40,8 @@ export class WorkspacesController {
     private readonly ac: AccessController,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly docReader: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly event: EventBus
   ) {}
 
   // get workspace blob
@@ -218,5 +233,140 @@ export class WorkspacesController {
 
     res.setHeader('cache-control', 'private, max-age=2592000, immutable');
     body.pipe(res);
+  }
+
+  // Create a new doc
+  @Post('/:id/docs')
+  @CallMetric('controllers', 'workspace_create_doc')
+  async createDoc(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Body() body: CreateDocDto,
+    @Res() res: Response
+  ) {
+    // Check workspace write permission
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.CreateDoc');
+
+    // Generate new doc ID
+    const docId = randomUUID();
+
+    try {
+      // First create the doc metadata in workspace_pages table
+      await this.models.doc.upsertMeta(workspaceId, docId, {
+        title: body.title || 'Untitled',
+        public: false,
+        defaultRole: 30, // Manager role
+        mode: 0, // Page mode
+        blocked: false,
+      });
+
+      // Create initial content if provided
+      if (body.initialContent) {
+        // Convert array to Uint8Array if needed
+        const content =
+          body.initialContent instanceof Uint8Array
+            ? body.initialContent
+            : new Uint8Array(body.initialContent);
+
+        this.logger.log(
+          `Creating doc with initial content, size: ${content.length} bytes`
+        );
+
+        try {
+          await this.workspace.pushDocUpdates(
+            workspaceId,
+            docId,
+            [content],
+            user.id
+          );
+          this.logger.log(`Successfully pushed updates for doc ${docId}`);
+        } catch (pushError) {
+          this.logger.error(`Failed to push updates: ${pushError}`);
+          throw pushError;
+        }
+      } else {
+        // Create a proper empty Yjs document for AFFiNE
+        // This is a base64 encoded Yjs update that creates the basic page structure
+        const emptyDocBase64 =
+          'AQaFzMPBqKyODgAnAQZibG9ja3MJcGFnZTpob21lASgAhczDwaisjg4ABnN5czppZAF3CXBhZ2U6aG9tZSgAhczDwaisjg4AC3N5czpmbGF2b3VyAXcLYWZmaW5lOnBhZ2UnAIXMw8GorI4OAAxzeXM6Y2hpbGRyZW4AJwCFzMPBqKyODgAKcHJvcDp0aXRsZQIEAIXMw8GorI4OBCJUZXN0IERvY3VtZW50IENyZWF0ZWQgdmlhIFJFU1QgQVBJAA==';
+        const emptyDoc = new Uint8Array(Buffer.from(emptyDocBase64, 'base64'));
+        await this.workspace.pushDocUpdates(
+          workspaceId,
+          docId,
+          [emptyDoc],
+          user.id
+        );
+      }
+
+      // Set the current user as the owner of the doc
+      await this.models.docUser.setOwner(workspaceId, docId, user.id);
+
+      // Emit doc created event
+      this.event.emit('doc.created', {
+        workspaceId,
+        docId,
+        editor: user.id,
+      });
+
+      return res.status(201).json({
+        docId,
+        workspaceId,
+        createdAt: new Date().toISOString(),
+        createdBy: user.id,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to create doc: ${error}`);
+      return res.status(500).json({ error: 'Failed to create document' });
+    }
+  }
+
+  // Update existing doc
+  @Put('/:id/docs/:guid')
+  @CallMetric('controllers', 'workspace_update_doc')
+  async updateDoc(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Param('guid') docId: string,
+    @Body() body: UpdateDocDto,
+    @Res() res: Response
+  ) {
+    // Check doc write permission
+    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Update');
+
+    if (!body.updates || !Array.isArray(body.updates)) {
+      return res.status(400).json({ error: 'Updates array is required' });
+    }
+
+    try {
+      // Convert arrays to Uint8Array if needed
+      const updates = body.updates.map(update =>
+        update instanceof Uint8Array ? update : new Uint8Array(update)
+      );
+
+      // Apply updates to the doc
+      const timestamp = await this.workspace.pushDocUpdates(
+        workspaceId,
+        docId,
+        updates,
+        user.id
+      );
+
+      return res.json({
+        docId,
+        workspaceId,
+        timestamp,
+        updatedBy: user.id,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to update doc: ${error}`);
+      if (error instanceof DocNotFound) {
+        return res.status(404).json({ error: 'Document not found' });
+      } else {
+        return res.status(500).json({ error: 'Failed to update document' });
+      }
+    }
   }
 }
