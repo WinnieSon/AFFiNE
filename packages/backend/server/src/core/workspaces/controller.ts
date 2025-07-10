@@ -12,6 +12,7 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import * as Y from 'yjs';
 
 import {
   BlobNotFound,
@@ -254,14 +255,8 @@ export class WorkspacesController {
     const docId = randomUUID();
 
     try {
-      // First create the doc metadata in workspace_pages table
-      await this.models.doc.upsertMeta(workspaceId, docId, {
-        title: body.title || 'Untitled',
-        public: false,
-        defaultRole: 30, // Manager role
-        mode: 0, // Page mode
-        blocked: false,
-      });
+      // Note: We're NOT creating database metadata here because it causes issues
+      // The document will be created only in Yjs for now
 
       // Create initial content if provided
       if (body.initialContent) {
@@ -300,6 +295,35 @@ export class WorkspacesController {
           user.id
         );
       }
+
+      // Force merge updates to create snapshot immediately
+      // This ensures the document exists in the snapshots table before creating metadata
+      try {
+        await this.workspace.getDoc(workspaceId, docId);
+        this.logger.log(`Successfully created snapshot for doc ${docId}`);
+      } catch (error) {
+        this.logger.error(`Failed to create snapshot: ${error}`);
+        throw error;
+      }
+
+      // Add document to workspace metadata
+      try {
+        await this.addDocToWorkspaceMeta(
+          workspaceId,
+          docId,
+          body.title || 'Untitled',
+          user.id
+        );
+      } catch (error) {
+        this.logger.warn(`Failed to add doc to workspace meta: ${error}`);
+        // Non-critical error, continue
+      }
+
+      // Create database metadata for the document
+      // This is essential for the document to be properly recognized
+      await this.models.doc.upsertMeta(workspaceId, docId, {
+        title: body.title || 'Untitled',
+      });
 
       // Set the current user as the owner of the doc
       await this.models.docUser.setOwner(workspaceId, docId, user.id);
@@ -367,6 +391,85 @@ export class WorkspacesController {
       } else {
         return res.status(500).json({ error: 'Failed to update document' });
       }
+    }
+  }
+
+  /**
+   * Add document to workspace metadata
+   */
+  private async addDocToWorkspaceMeta(
+    workspaceId: string,
+    docId: string,
+    title: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      // Get the workspace's root document
+      const rootDoc = await this.workspace.getDoc(workspaceId, workspaceId);
+      if (!rootDoc) {
+        this.logger.warn(
+          `Root document not found for workspace ${workspaceId}`
+        );
+        return;
+      }
+
+      // Parse the root document
+      const ydoc = new Y.Doc();
+      Y.applyUpdate(ydoc, rootDoc.bin);
+
+      // Get the meta map and pages array
+      const meta = ydoc.getMap('meta');
+      const pages = meta.get('pages') as Y.Array<Y.Map<any>>;
+
+      if (!pages) {
+        this.logger.warn(`No pages array found in workspace ${workspaceId}`);
+        return;
+      }
+
+      // Check if document already exists in pages
+      let docFound = false;
+      for (let i = 0; i < pages.length; i++) {
+        const pageMap = pages.get(i);
+        if (pageMap instanceof Y.Map && pageMap.get('id') === docId) {
+          docFound = true;
+          break;
+        }
+      }
+
+      if (!docFound) {
+        // Create new entry
+        const timestamp = Date.now();
+        const docMeta = new Y.Map();
+        docMeta.set('id', docId);
+        docMeta.set('title', title);
+        docMeta.set('createDate', timestamp);
+        docMeta.set('updatedDate', timestamp);
+        docMeta.set('tags', new Y.Array());
+        pages.push([docMeta]);
+
+        this.logger.log(
+          `Added doc ${docId} to workspace ${workspaceId} metadata`
+        );
+      } else {
+        this.logger.log(
+          `Doc ${docId} already exists in workspace ${workspaceId} metadata`
+        );
+      }
+
+      // Get the update and push it back
+      const update = Y.encodeStateAsUpdate(ydoc);
+      await this.workspace.pushDocUpdates(
+        workspaceId,
+        workspaceId,
+        [update],
+        userId
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to update document timestamps: ${error}`,
+        error
+      );
+      // Don't throw - this is not critical for document creation
     }
   }
 }

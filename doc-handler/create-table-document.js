@@ -138,9 +138,10 @@ function createTableBlock(tableId, columns, rows, data) {
   tableBlock.set('sys:children', new Y.Array());
 
   // Metadata
-  tableBlock.set('prop:meta:createdAt', Date.now());
+  const timestamp = Date.now();
+  tableBlock.set('prop:meta:createdAt', timestamp);
   tableBlock.set('prop:meta:createdBy', '9a82c741-ebf0-4d82-ac1a-f32b64c784d8');
-  tableBlock.set('prop:meta:updatedAt', Date.now());
+  tableBlock.set('prop:meta:updatedAt', timestamp);
   tableBlock.set('prop:meta:updatedBy', '9a82c741-ebf0-4d82-ac1a-f32b64c784d8');
 
   // Create columns
@@ -171,15 +172,15 @@ function createTableBlock(tableId, columns, rows, data) {
 }
 
 // Create document with table
-function createDocumentWithTable(docId, title = 'Table Test') {
+function createDocumentWithTable(title = 'Table Test') {
   const doc = new Y.Doc();
 
   // Get the blocks map
   const blocks = doc.getMap('blocks');
 
-  // Create IDs
-  const pageId = docId;
-  const noteId = `${docId}:note:${crypto.randomBytes(4).toString('hex')}`;
+  // Create IDs - use a temporary page ID that will be replaced by the server
+  const pageId = 'temp-page-id';
+  const noteId = generateUniqueId(10);
   const titleParagraphId = generateUniqueId(10);
   const descParagraphId = generateUniqueId(10);
   const tableId = generateUniqueId(10);
@@ -315,28 +316,36 @@ function createDocumentWithTable(docId, title = 'Table Test') {
   blockVersions.set('affine:table', 1);
   meta.set('blockVersions', blockVersions);
 
-  // Add empty pages array to meta
-  meta.set('pages', new Y.Array());
+  // Create pages metadata with timestamps
+  const pages = new Y.Array();
+  const pageMeta = new Y.Map();
+  const currentTime = Date.now();
+  pageMeta.set('id', pageId);
+  pageMeta.set('title', title);
+  pageMeta.set('createDate', currentTime);
+  pageMeta.set('updatedDate', currentTime);
+  pageMeta.set('tags', new Y.Array());
+  pages.push([pageMeta]);
+  meta.set('pages', pages);
 
   return doc;
 }
 
 // Create document via API
-async function createDocumentViaAPI(docId, title, cookie) {
+async function createDocumentViaAPI(title, cookie) {
   console.log(`\n📄 Creating document: "${title}"`);
-  console.log(`   ID: ${docId}`);
 
   // Create the document structure
-  const doc = createDocumentWithTable(docId, title);
+  const doc = createDocumentWithTable(title);
   const update = Y.encodeStateAsUpdate(doc);
 
-  // Create document via API
+  // Use the new POST endpoint instead of PUT
   const options = {
     protocol: `${protocol}:`,
     hostname,
     port,
-    path: `/api/workspaces/${workspaceId}/docs/${docId}`,
-    method: 'PUT',
+    path: `/api/workspaces/${workspaceId}/docs`,
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Cookie: cookie,
@@ -344,17 +353,91 @@ async function createDocumentViaAPI(docId, title, cookie) {
   };
 
   const data = {
-    updates: [Array.from(update)],
+    title: title,
+    initialContent: Array.from(update),
   };
 
   const response = await makeRequest(options, data);
 
   if (response.statusCode !== 200 && response.statusCode !== 201) {
-    throw new Error(`Failed to create document: ${response.statusCode}`);
+    throw new Error(
+      `Failed to create document: ${response.statusCode} - ${JSON.stringify(response.body)}`
+    );
   }
 
   console.log('✅ Document created successfully');
-  return true;
+  console.log(`   Response:`, response.body);
+  console.log(`   ID: ${response.body.docId}`);
+
+  // Debug: Check if document was actually created
+  console.log(`\n📊 Verifying document creation...`);
+  const verifyOptions = {
+    protocol: `${protocol}:`,
+    hostname,
+    port,
+    path: `/api/workspaces/${workspaceId}/docs/${response.body.docId}`,
+    method: 'GET',
+    headers: {
+      Cookie: cookie,
+    },
+  };
+
+  const verifyResponse = await makeRequest(verifyOptions, null, true);
+  console.log(`   Verification status: ${verifyResponse.statusCode}`);
+  console.log(
+    `   Document size: ${verifyResponse.body ? verifyResponse.body.length : 0} bytes`
+  );
+
+  // Wait a moment for sync
+  console.log(`\n⏳ Waiting for document sync...`);
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
+  // Check workspace metadata
+  console.log(`\n📋 Checking workspace metadata...`);
+  const workspaceOptions = {
+    protocol: `${protocol}:`,
+    hostname,
+    port,
+    path: `/api/workspaces/${workspaceId}/docs/${workspaceId}`,
+    method: 'GET',
+    headers: {
+      Cookie: cookie,
+    },
+  };
+
+  const workspaceResponse = await makeRequest(workspaceOptions, null, true);
+  if (workspaceResponse.statusCode === 200) {
+    const workspaceDoc = new Y.Doc();
+    Y.applyUpdate(workspaceDoc, new Uint8Array(workspaceResponse.body));
+    const meta = workspaceDoc.getMap('meta');
+    const pages = meta.get('pages');
+
+    if (pages && pages instanceof Y.Array) {
+      let found = false;
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages.get(i);
+        if (page && page.get('id') === response.body.docId) {
+          found = true;
+          console.log(`   ✅ Document found in workspace metadata`);
+          console.log(`   Title: ${page.get('title')}`);
+          console.log(
+            `   Created: ${new Date(page.get('createDate')).toISOString()}`
+          );
+          console.log(
+            `   Updated: ${new Date(page.get('updatedDate')).toISOString()}`
+          );
+          break;
+        }
+      }
+
+      if (!found) {
+        console.log(`   ⚠️  Document NOT found in workspace metadata`);
+        console.log(`   Total pages in workspace: ${pages.length}`);
+      }
+    }
+  }
+
+  return response.body.docId;
 }
 
 // Add document to workspace metadata
@@ -397,7 +480,9 @@ async function addToWorkspaceMetadata(docId, title, cookie) {
     const docMeta = new Y.Map();
     docMeta.set('id', docId);
     docMeta.set('title', title);
-    docMeta.set('createDate', Date.now());
+    const currentTime = Date.now();
+    docMeta.set('createDate', currentTime);
+    docMeta.set('updatedDate', currentTime);
     docMeta.set('tags', new Y.Array());
 
     // Push to pages array
@@ -446,19 +531,13 @@ async function main() {
     const cookie = await signIn();
 
     // Create document with table
-    const tableDoc = {
-      id: crypto.randomUUID(),
-      title: '프로젝트 현황 테이블',
-    };
+    const title = '프로젝트 현황 테이블';
 
-    // Create the document
-    await createDocumentViaAPI(tableDoc.id, tableDoc.title, cookie);
-
-    // Add to workspace metadata
-    await addToWorkspaceMetadata(tableDoc.id, tableDoc.title, cookie);
+    // Create the document - the new API will handle everything including metadata
+    const docId = await createDocumentViaAPI(title, cookie);
 
     console.log(
-      `\n🔗 View at: http://localhost:8080/workspace/${workspaceId}/${tableDoc.id}`
+      `\n🔗 View at: http://localhost:8080/workspace/${workspaceId}/${docId}`
     );
 
     console.log('\n✨ Document with table created successfully!');
