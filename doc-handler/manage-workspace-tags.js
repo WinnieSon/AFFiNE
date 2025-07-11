@@ -4,10 +4,9 @@
  * Manage workspace tags in AFFiNE
  */
 
-const https = require('https');
-const http = require('http');
+const https = require('node:https');
+const http = require('node:http');
 const Y = require('yjs');
-const crypto = require('crypto');
 
 // Server configuration
 const protocol = 'http';
@@ -42,7 +41,7 @@ function makeRequest(options, data = null, binary = false) {
             body: binary ? Buffer.concat(body) : body ? JSON.parse(body) : null,
           };
           resolve(result);
-        } catch (e) {
+        } catch {
           resolve({
             statusCode: res.statusCode,
             headers: res.headers,
@@ -327,7 +326,7 @@ async function main() {
 
     // Get existing tags
     console.log('\n📋 Current tags:');
-    const existingTags = getAllTags(doc);
+    getAllTags(doc);
 
     // Add new "tt" tag
     const newTagId = addTagToWorkspace(doc, 'tt');

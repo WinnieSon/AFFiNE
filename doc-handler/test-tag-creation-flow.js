@@ -4,8 +4,8 @@
  * Test tag creation flow step by step
  */
 
-const https = require('https');
-const http = require('http');
+const https = require('node:https');
+const http = require('node:http');
 const Y = require('yjs');
 
 // Server configuration
@@ -41,7 +41,7 @@ function makeRequest(options, data = null, binary = false) {
             body: binary ? Buffer.concat(body) : body ? JSON.parse(body) : null,
           };
           resolve(result);
-        } catch (e) {
+        } catch {
           resolve({
             statusCode: res.statusCode,
             headers: res.headers,
@@ -238,7 +238,7 @@ async function main() {
 
     // Check initial workspace tags
     console.log('\n1️⃣ Initial workspace state:');
-    const { tags: initialTags } = await readWorkspaceAndCheckTags(cookie);
+    await readWorkspaceAndCheckTags(cookie);
 
     // Create a document with a new tag
     const testTagName = `TestTag_${Date.now()}`;

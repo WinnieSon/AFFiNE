@@ -39,7 +39,8 @@
       "Bash(git restore:*)",
       "Bash(git add:*)",
       "Bash(yarn dev)",
-      "Bash(yarn workspace @affine/server:*)"
+      "Bash(yarn workspace @affine/server:*)",
+      "Bash(yarn lint:*)"
     ],
     "deny": []
   }
