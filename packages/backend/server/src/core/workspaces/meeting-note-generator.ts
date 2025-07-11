@@ -30,7 +30,7 @@ function generateUniqueId(length = 10): string {
 
 // Generate order string for table columns/rows
 function generateOrderString(index: number): string {
-  const base = 'a' + (index * 10).toString().padStart(2, '0');
+  const base = 'a' + (index * 10).toString().padStart(4, '0');
   const random = generateUniqueId(32);
   return base + random;
 }
