@@ -30,11 +30,13 @@ import { DocReader } from '../doc/reader';
 import { AccessController } from '../permission';
 import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
-import { CreateDocDto, UpdateDocDto } from './dto';
+import { CreateDocDto, CreateMeetingDocDto, UpdateDocDto } from './dto';
+import { createMeetingNoteDocument } from './meeting-note-generator';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {
   logger = new Logger(WorkspacesController.name);
+
   constructor(
     private readonly storage: WorkspaceBlobStorage,
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
@@ -347,6 +349,123 @@ export class WorkspacesController {
     }
   }
 
+  // Create a new doc from meeting note data
+  @Post('/:id/docs/from-meeting')
+  @CallMetric('controllers', 'workspace_create_meeting_doc')
+  async createMeetingDoc(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Body() body: CreateMeetingDocDto,
+    @Res() res: Response
+  ) {
+    // Check workspace write permission
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.CreateDoc');
+
+    // Generate new doc ID
+    const docId = randomUUID();
+
+    try {
+      // For now, we'll pass tag names directly to the document
+      // The UI will handle creating tags in the workspace
+      let tagNames: string[] = [];
+      if (body.tags && body.tags.length > 0) {
+        tagNames = body.tags;
+        this.logger.log(`Will add tags to document: ${tagNames.join(', ')}`);
+      }
+
+      // Format document title with date/time
+      let formattedTitle = '📋';
+      if (body.date && body.time) {
+        formattedTitle += `${body.date} ${body.time} `;
+      } else if (body.date) {
+        formattedTitle += `${body.date} `;
+      }
+      formattedTitle += body.title || '회의록';
+
+      // Create meeting note document structure
+      const meetingDoc = createMeetingNoteDocument(body);
+      const content = Y.encodeStateAsUpdate(meetingDoc);
+
+      this.logger.log(
+        `Creating meeting note doc with content, size: ${content.length} bytes`
+      );
+
+      // Push the document content
+      await this.workspace.pushDocUpdates(
+        workspaceId,
+        docId,
+        [content],
+        user.id
+      );
+
+      this.logger.log(
+        `Successfully pushed meeting note updates for doc ${docId}`
+      );
+
+      // Force merge updates to create snapshot immediately
+      try {
+        await this.workspace.getDoc(workspaceId, docId);
+        this.logger.log(
+          `Successfully created snapshot for meeting note doc ${docId}`
+        );
+      } catch (error) {
+        this.logger.error(`Failed to create snapshot: ${error}`);
+        throw error;
+      }
+
+      // Add document to workspace metadata with tag IDs
+      try {
+        await this.addDocToWorkspaceMeta(
+          workspaceId,
+          docId,
+          formattedTitle,
+          user.id,
+          tagNames.length > 0 ? tagNames : undefined
+        );
+        this.logger.log(
+          `Added document to workspace meta with ${tagNames.length} tags`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to add meeting note doc to workspace meta: ${error}`
+        );
+        // Non-critical error, continue
+      }
+
+      // Create database metadata for the document
+      await this.models.doc.upsertMeta(workspaceId, docId, {
+        title: formattedTitle,
+      });
+
+      // Set the current user as the owner of the doc
+      await this.models.docUser.setOwner(workspaceId, docId, user.id);
+
+      // Emit doc created event
+      this.event.emit('doc.created', {
+        workspaceId,
+        docId,
+        editor: user.id,
+      });
+
+      return res.status(201).json({
+        docId,
+        workspaceId,
+        title: formattedTitle,
+        createdAt: new Date().toISOString(),
+        createdBy: user.id,
+        type: 'meeting-note',
+      });
+    } catch (error) {
+      this.logger.error(`Failed to create meeting note doc: ${error}`);
+      return res
+        .status(500)
+        .json({ error: 'Failed to create meeting note document' });
+    }
+  }
+
   // Update existing doc
   @Put('/:id/docs/:guid')
   @CallMetric('controllers', 'workspace_update_doc')
@@ -401,7 +520,8 @@ export class WorkspacesController {
     workspaceId: string,
     docId: string,
     title: string,
-    userId: string
+    userId: string,
+    tagNames?: string[]
   ): Promise<void> {
     try {
       // Get the workspace's root document
@@ -444,11 +564,25 @@ export class WorkspacesController {
         docMeta.set('title', title);
         docMeta.set('createDate', timestamp);
         docMeta.set('updatedDate', timestamp);
-        docMeta.set('tags', new Y.Array());
+
+        // Add tag names if provided
+        // Note: In AFFiNE, tags can be stored as names in the document
+        // The UI will handle creating/linking them in the workspace
+        const tagsArray = new Y.Array();
+        if (tagNames && tagNames.length > 0) {
+          this.logger.log(
+            `Adding ${tagNames.length} tags to document metadata: ${JSON.stringify(tagNames)}`
+          );
+          tagNames.forEach(tagName => {
+            tagsArray.push([tagName]); // Push tag name directly
+          });
+        }
+        docMeta.set('tags', tagsArray);
+
         pages.push([docMeta]);
 
         this.logger.log(
-          `Added doc ${docId} to workspace ${workspaceId} metadata`
+          `Added doc ${docId} to workspace ${workspaceId} metadata with ${tagsArray.length} tags`
         );
       } else {
         this.logger.log(
