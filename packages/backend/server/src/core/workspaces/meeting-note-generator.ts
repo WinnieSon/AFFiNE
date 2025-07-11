@@ -401,8 +401,17 @@ export function createMeetingNoteDocument(data: MeetingNoteData): Y.Doc {
       headerContentText
     );
 
-    // Add data rows
-    data.conversation.forEach((conv, index) => {
+    // Sort conversations by time and add data rows
+    const sortedConversations = [...data.conversation].sort((a, b) => {
+      // Parse time strings (MM:SS format)
+      const parseTime = (timeStr: string) => {
+        const parts = timeStr.split(':');
+        return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+      };
+      return parseTime(a.time) - parseTime(b.time);
+    });
+
+    sortedConversations.forEach((conv, index) => {
       const rowId = generateUniqueId(10);
       tableBlock.set(`prop:rows.${rowId}.rowId`, rowId);
       tableBlock.set(
