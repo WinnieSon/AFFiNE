@@ -61,6 +61,7 @@ import { configureUserspaceModule } from './userspace';
 import { configureWorkspaceModule } from './workspace';
 import { configureIndexerEmbeddingModule } from './workspace-indexer-embedding';
 import { configureWorkspacePropertyModule } from './workspace-property';
+import { configureRecordingModule } from './recording';
 
 export function configureCommonModules(framework: Framework) {
   configureI18nModule(framework);
@@ -117,6 +118,7 @@ export function configureCommonModules(framework: Framework) {
   configureNotificationModule(framework);
   configureIntegrationModule(framework);
   configureWorkspacePropertyModule(framework);
+  configureRecordingModule(framework);
   configureCollectionRulesModule(framework);
   configureIndexerEmbeddingModule(framework);
   configureCommentModule(framework);

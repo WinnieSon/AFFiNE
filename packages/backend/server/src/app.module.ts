@@ -57,6 +57,7 @@ import { LicenseModule } from './plugins/license';
 import { OAuthModule } from './plugins/oauth';
 import { PaymentModule } from './plugins/payment';
 import { WorkerModule } from './plugins/worker';
+import { RecordingModule } from './plugins/recording';
 
 export const FunctionalityModules = [
   ClsModule.forRoot({
@@ -187,7 +188,8 @@ export function buildAppModule(env: Env) {
       CaptchaModule,
       OAuthModule,
       CustomerIoModule,
-      CommentModule
+      CommentModule,
+      RecordingModule
     )
     // doc service only
     .useIf(() => env.flavors.doc, DocServiceModule)
