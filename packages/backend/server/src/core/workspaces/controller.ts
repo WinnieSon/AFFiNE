@@ -1,5 +1,18 @@
-import { Controller, Get, Logger, Param, Query, Res } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Post,
+  Put,
+  Query,
+  Res,
+} from '@nestjs/common';
 import type { Response } from 'express';
+import * as Y from 'yjs';
 
 import {
   BlobNotFound,
@@ -7,6 +20,7 @@ import {
   CommentAttachmentNotFound,
   DocHistoryNotFound,
   DocNotFound,
+  EventBus,
   InvalidHistoryTimestamp,
 } from '../../base';
 import { DocMode, Models, PublicDocMode } from '../../models';
@@ -16,17 +30,21 @@ import { DocReader } from '../doc/reader';
 import { AccessController } from '../permission';
 import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
+import { CreateDocDto, CreateMeetingDocDto, UpdateDocDto } from './dto';
+import { createMeetingNoteDocument } from './meeting-note-generator';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {
   logger = new Logger(WorkspacesController.name);
+
   constructor(
     private readonly storage: WorkspaceBlobStorage,
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
     private readonly ac: AccessController,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly docReader: DocReader,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly event: EventBus
   ) {}
 
   // get workspace blob
@@ -218,5 +236,374 @@ export class WorkspacesController {
 
     res.setHeader('cache-control', 'private, max-age=2592000, immutable');
     body.pipe(res);
+  }
+
+  // Create a new doc
+  @Post('/:id/docs')
+  @CallMetric('controllers', 'workspace_create_doc')
+  async createDoc(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Body() body: CreateDocDto,
+    @Res() res: Response
+  ) {
+    // Check workspace write permission
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.CreateDoc');
+
+    // Generate new doc ID
+    const docId = randomUUID();
+
+    try {
+      // Note: We're NOT creating database metadata here because it causes issues
+      // The document will be created only in Yjs for now
+
+      // Create initial content if provided
+      if (body.initialContent) {
+        // Convert array to Uint8Array if needed
+        const content =
+          body.initialContent instanceof Uint8Array
+            ? body.initialContent
+            : new Uint8Array(body.initialContent);
+
+        this.logger.log(
+          `Creating doc with initial content, size: ${content.length} bytes`
+        );
+
+        try {
+          await this.workspace.pushDocUpdates(
+            workspaceId,
+            docId,
+            [content],
+            user.id
+          );
+          this.logger.log(`Successfully pushed updates for doc ${docId}`);
+        } catch (pushError) {
+          this.logger.error(`Failed to push updates: ${pushError}`);
+          throw pushError;
+        }
+      } else {
+        // Create a proper empty Yjs document for AFFiNE
+        // This is a base64 encoded Yjs update that creates the basic page structure
+        const emptyDocBase64 =
+          'AQaFzMPBqKyODgAnAQZibG9ja3MJcGFnZTpob21lASgAhczDwaisjg4ABnN5czppZAF3CXBhZ2U6aG9tZSgAhczDwaisjg4AC3N5czpmbGF2b3VyAXcLYWZmaW5lOnBhZ2UnAIXMw8GorI4OAAxzeXM6Y2hpbGRyZW4AJwCFzMPBqKyODgAKcHJvcDp0aXRsZQIEAIXMw8GorI4OBCJUZXN0IERvY3VtZW50IENyZWF0ZWQgdmlhIFJFU1QgQVBJAA==';
+        const emptyDoc = new Uint8Array(Buffer.from(emptyDocBase64, 'base64'));
+        await this.workspace.pushDocUpdates(
+          workspaceId,
+          docId,
+          [emptyDoc],
+          user.id
+        );
+      }
+
+      // Force merge updates to create snapshot immediately
+      // This ensures the document exists in the snapshots table before creating metadata
+      try {
+        await this.workspace.getDoc(workspaceId, docId);
+        this.logger.log(`Successfully created snapshot for doc ${docId}`);
+      } catch (error) {
+        this.logger.error(`Failed to create snapshot: ${error}`);
+        throw error;
+      }
+
+      // Add document to workspace metadata
+      try {
+        await this.addDocToWorkspaceMeta(
+          workspaceId,
+          docId,
+          body.title || 'Untitled',
+          user.id
+        );
+      } catch (error) {
+        this.logger.warn(`Failed to add doc to workspace meta: ${error}`);
+        // Non-critical error, continue
+      }
+
+      // Create database metadata for the document
+      // This is essential for the document to be properly recognized
+      await this.models.doc.upsertMeta(workspaceId, docId, {
+        title: body.title || 'Untitled',
+      });
+
+      // Set the current user as the owner of the doc
+      await this.models.docUser.setOwner(workspaceId, docId, user.id);
+
+      // Emit doc created event
+      this.event.emit('doc.created', {
+        workspaceId,
+        docId,
+        editor: user.id,
+      });
+
+      return res.status(201).json({
+        docId,
+        workspaceId,
+        createdAt: new Date().toISOString(),
+        createdBy: user.id,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to create doc: ${error}`);
+      return res.status(500).json({ error: 'Failed to create document' });
+    }
+  }
+
+  // Create a new doc from meeting note data
+  @Post('/:id/docs/from-meeting')
+  @CallMetric('controllers', 'workspace_create_meeting_doc')
+  async createMeetingDoc(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Body() body: CreateMeetingDocDto,
+    @Res() res: Response
+  ) {
+    // Check workspace write permission
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.CreateDoc');
+
+    // Generate new doc ID
+    const docId = randomUUID();
+
+    try {
+      // For now, we'll pass tag names directly to the document
+      // The UI will handle creating tags in the workspace
+      let tagNames: string[] = [];
+      if (body.tags && body.tags.length > 0) {
+        tagNames = body.tags;
+        this.logger.log(`Will add tags to document: ${tagNames.join(', ')}`);
+      }
+
+      // Format document title with date/time
+      let formattedTitle = '📋';
+      if (body.date && body.time) {
+        formattedTitle += `${body.date} ${body.time} `;
+      } else if (body.date) {
+        formattedTitle += `${body.date} `;
+      }
+      formattedTitle += body.title || '회의록';
+
+      // Create meeting note document structure
+      const meetingDoc = createMeetingNoteDocument(body);
+      const content = Y.encodeStateAsUpdate(meetingDoc);
+
+      this.logger.log(
+        `Creating meeting note doc with content, size: ${content.length} bytes`
+      );
+
+      // Push the document content
+      await this.workspace.pushDocUpdates(
+        workspaceId,
+        docId,
+        [content],
+        user.id
+      );
+
+      this.logger.log(
+        `Successfully pushed meeting note updates for doc ${docId}`
+      );
+
+      // Force merge updates to create snapshot immediately
+      try {
+        await this.workspace.getDoc(workspaceId, docId);
+        this.logger.log(
+          `Successfully created snapshot for meeting note doc ${docId}`
+        );
+      } catch (error) {
+        this.logger.error(`Failed to create snapshot: ${error}`);
+        throw error;
+      }
+
+      // Add document to workspace metadata with tag IDs
+      try {
+        await this.addDocToWorkspaceMeta(
+          workspaceId,
+          docId,
+          formattedTitle,
+          user.id,
+          tagNames.length > 0 ? tagNames : undefined
+        );
+        this.logger.log(
+          `Added document to workspace meta with ${tagNames.length} tags`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to add meeting note doc to workspace meta: ${error}`
+        );
+        // Non-critical error, continue
+      }
+
+      // Create database metadata for the document
+      await this.models.doc.upsertMeta(workspaceId, docId, {
+        title: formattedTitle,
+      });
+
+      // Set the current user as the owner of the doc
+      await this.models.docUser.setOwner(workspaceId, docId, user.id);
+
+      // Emit doc created event
+      this.event.emit('doc.created', {
+        workspaceId,
+        docId,
+        editor: user.id,
+      });
+
+      return res.status(201).json({
+        docId,
+        workspaceId,
+        title: formattedTitle,
+        createdAt: new Date().toISOString(),
+        createdBy: user.id,
+        type: 'meeting-note',
+      });
+    } catch (error) {
+      this.logger.error(`Failed to create meeting note doc: ${error}`);
+      return res
+        .status(500)
+        .json({ error: 'Failed to create meeting note document' });
+    }
+  }
+
+  // Update existing doc
+  @Put('/:id/docs/:guid')
+  @CallMetric('controllers', 'workspace_update_doc')
+  async updateDoc(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Param('guid') docId: string,
+    @Body() body: UpdateDocDto,
+    @Res() res: Response
+  ) {
+    // Check doc write permission
+    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Update');
+
+    if (!body.updates || !Array.isArray(body.updates)) {
+      return res.status(400).json({ error: 'Updates array is required' });
+    }
+
+    try {
+      // Convert arrays to Uint8Array if needed
+      const updates = body.updates.map(update =>
+        update instanceof Uint8Array ? update : new Uint8Array(update)
+      );
+
+      // Apply updates to the doc
+      const timestamp = await this.workspace.pushDocUpdates(
+        workspaceId,
+        docId,
+        updates,
+        user.id
+      );
+
+      return res.json({
+        docId,
+        workspaceId,
+        timestamp,
+        updatedBy: user.id,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to update doc: ${error}`);
+      if (error instanceof DocNotFound) {
+        return res.status(404).json({ error: 'Document not found' });
+      } else {
+        return res.status(500).json({ error: 'Failed to update document' });
+      }
+    }
+  }
+
+  /**
+   * Add document to workspace metadata
+   */
+  private async addDocToWorkspaceMeta(
+    workspaceId: string,
+    docId: string,
+    title: string,
+    userId: string,
+    tagNames?: string[]
+  ): Promise<void> {
+    try {
+      // Get the workspace's root document
+      const rootDoc = await this.workspace.getDoc(workspaceId, workspaceId);
+      if (!rootDoc) {
+        this.logger.warn(
+          `Root document not found for workspace ${workspaceId}`
+        );
+        return;
+      }
+
+      // Parse the root document
+      const ydoc = new Y.Doc();
+      Y.applyUpdate(ydoc, rootDoc.bin);
+
+      // Get the meta map and pages array
+      const meta = ydoc.getMap('meta');
+      const pages = meta.get('pages') as Y.Array<Y.Map<any>>;
+
+      if (!pages) {
+        this.logger.warn(`No pages array found in workspace ${workspaceId}`);
+        return;
+      }
+
+      // Check if document already exists in pages
+      let docFound = false;
+      for (let i = 0; i < pages.length; i++) {
+        const pageMap = pages.get(i);
+        if (pageMap instanceof Y.Map && pageMap.get('id') === docId) {
+          docFound = true;
+          break;
+        }
+      }
+
+      if (!docFound) {
+        // Create new entry
+        const timestamp = Date.now();
+        const docMeta = new Y.Map();
+        docMeta.set('id', docId);
+        docMeta.set('title', title);
+        docMeta.set('createDate', timestamp);
+        docMeta.set('updatedDate', timestamp);
+
+        // Add tag names if provided
+        // Note: In AFFiNE, tags can be stored as names in the document
+        // The UI will handle creating/linking them in the workspace
+        const tagsArray = new Y.Array();
+        if (tagNames && tagNames.length > 0) {
+          this.logger.log(
+            `Adding ${tagNames.length} tags to document metadata: ${JSON.stringify(tagNames)}`
+          );
+          tagNames.forEach(tagName => {
+            tagsArray.push([tagName]); // Push tag name directly
+          });
+        }
+        docMeta.set('tags', tagsArray);
+
+        pages.push([docMeta]);
+
+        this.logger.log(
+          `Added doc ${docId} to workspace ${workspaceId} metadata with ${tagsArray.length} tags`
+        );
+      } else {
+        this.logger.log(
+          `Doc ${docId} already exists in workspace ${workspaceId} metadata`
+        );
+      }
+
+      // Get the update and push it back
+      const update = Y.encodeStateAsUpdate(ydoc);
+      await this.workspace.pushDocUpdates(
+        workspaceId,
+        workspaceId,
+        [update],
+        userId
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to update document timestamps: ${error}`,
+        error
+      );
+      // Don't throw - this is not critical for document creation
+    }
   }
 }

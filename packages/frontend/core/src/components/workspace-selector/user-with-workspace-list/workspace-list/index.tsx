@@ -301,18 +301,18 @@ export const AFFiNEWorkspaceList = ({
           onClickWorkspace={handleClickWorkspace}
         />
       </FrameworkScope>
-      {(localWorkspaces.length > 0 || selfhostServers.length > 0) && (
+      {selfhostServers.length > 0 && (
         <Divider size="thinner" className={styles.serverDivider} />
       )}
 
-      {/* 2. local */}
-      <LocalWorkspaces
+      {/* 2. local - DISABLED */}
+      {/* <LocalWorkspaces
         workspaces={localWorkspaces}
         onClickWorkspace={handleClickWorkspace}
         onClickEnableCloud={
           showEnableCloudButton ? onClickEnableCloud : undefined
         }
-      />
+      /> */}
       {selfhostServers.length > 0 && (
         <Divider size="thinner" className={styles.serverDivider} />
       )}

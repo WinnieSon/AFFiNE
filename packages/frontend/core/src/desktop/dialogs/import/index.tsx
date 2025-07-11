@@ -340,18 +340,7 @@ const ImportOptions = ({
           )
         )}
       </div>
-      <div className={style.importModalTip}>
-        {t['com.affine.import.modal.tip']()}{' '}
-        <a
-          className={style.link}
-          href={BUILD_CONFIG.discordUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Discord
-        </a>
-        .
-      </div>
+      {/* Discord tip removed */}
     </>
   );
 };
@@ -378,15 +367,7 @@ const SuccessStatus = ({ onComplete }: { onComplete: () => void }) => {
         {t['com.affine.import.status.success.title']()}
       </div>
       <p className={style.importStatusContent}>
-        {t['com.affine.import.status.success.message']()}{' '}
-        <a
-          className={style.link}
-          href={BUILD_CONFIG.discordUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Discord
-        </a>
+        {t['com.affine.import.status.success.message']()}
         .
       </p>
       <div className={style.importModalButtonContainer}>

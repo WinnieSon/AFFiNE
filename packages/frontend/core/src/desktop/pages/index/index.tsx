@@ -150,25 +150,31 @@ export const Component = ({
     if (listIsLoading || list.length > 0) {
       return;
     }
-    createFirstAppData(workspacesService)
-      .then(createdWorkspace => {
-        if (createdWorkspace) {
-          if (createdWorkspace.defaultPageId) {
-            jumpToPage(
-              createdWorkspace.meta.id,
-              createdWorkspace.defaultPageId
-            );
-          } else {
-            openPage(createdWorkspace.meta.id, 'all');
-          }
-        }
-      })
-      .catch(err => {
-        console.error('Failed to create first app data', err);
-      })
-      .finally(() => {
-        setCreating(false);
-      });
+    // Local workspace creation disabled - require login
+    if (!loggedIn) {
+      jumpToSignIn();
+      return;
+    }
+    // createFirstAppData(workspacesService)
+    //   .then(createdWorkspace => {
+    //     if (createdWorkspace) {
+    //       if (createdWorkspace.defaultPageId) {
+    //         jumpToPage(
+    //           createdWorkspace.meta.id,
+    //           createdWorkspace.defaultPageId
+    //         );
+    //       } else {
+    //         openPage(createdWorkspace.meta.id, 'all');
+    //       }
+    //     }
+    //   })
+    //   .catch(err => {
+    //     console.error('Failed to create first app data', err);
+    //   })
+    //   .finally(() => {
+    //     setCreating(false);
+    //   });
+    setCreating(false);
   }, [
     jumpToPage,
     jumpToSignIn,

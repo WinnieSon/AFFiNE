@@ -241,3 +241,69 @@ test('should be able to change page publish mode', async t => {
   t.is(res.status, HttpStatus.OK);
   t.is(res.get('publish-mode'), 'edgeless');
 });
+
+test('should create doc with database metadata', async t => {
+  const { app, workspace: doc, models, db, u1 } = t.context;
+
+  // Create a workspace for testing
+  const workspace = await db.workspace.create({
+    data: {
+      id: 'test-workspace',
+      public: false,
+    },
+  });
+
+  // Grant user access to workspace
+  await models.workspaceUser.set(workspace.id, u1.id, WorkspaceRole.Manager, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
+
+  // Login as user
+  await app.login(u1);
+
+  // Mock workspace methods
+  doc.pushDocUpdates.resolves(Date.now());
+  doc.getDoc.resolves({
+    spaceId: workspace.id,
+    docId: 'new-doc-id',
+    bin: Buffer.from([0, 0]),
+    timestamp: Date.now(),
+  });
+
+  // Create a document via REST API
+  const res = await app.POST(`/api/workspaces/${workspace.id}/docs`).send({
+    title: 'Test Document',
+    content: 'Test content',
+  });
+
+  t.is(res.status, HttpStatus.CREATED);
+  t.truthy(res.body.docId);
+  t.is(res.body.workspaceId, workspace.id);
+
+  // Verify document metadata was created in database
+  const docMeta = await db.workspaceDoc.findUnique({
+    where: {
+      workspaceId_docId: {
+        workspaceId: workspace.id,
+        docId: res.body.docId,
+      },
+    },
+  });
+
+  t.truthy(docMeta, 'Document metadata should exist in database');
+  t.is(docMeta?.title, 'Test Document', 'Document title should match');
+
+  // Verify document permissions were set
+  const docPermissions = await db.workspaceDocUserRole.findUnique({
+    where: {
+      workspaceId_docId_userId: {
+        workspaceId: workspace.id,
+        docId: res.body.docId,
+        userId: u1.id,
+      },
+    },
+  });
+
+  t.truthy(docPermissions, 'Document permissions should exist');
+  t.is(docPermissions?.type, 'Owner', 'User should be document owner');
+});

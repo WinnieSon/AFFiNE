@@ -21,6 +21,9 @@ const MigrationBackgroundCover = () => {
 };
 
 export const MigrationAllDocsDataNotification = () => {
+  // Migration notification disabled
+  return null;
+  
   const t = useI18n();
   const docCreatedByUpdatedBySyncService = useService(
     DocCreatedByUpdatedBySyncService

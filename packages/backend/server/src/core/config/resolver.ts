@@ -75,12 +75,12 @@ export class ServerConfigResolver {
       name:
         this.config.server.name ??
         (env.selfhosted
-          ? 'AFFiNE Selfhosted Cloud'
+          ? 'Palcon AI Cloud'
           : env.namespaces.canary
-            ? 'AFFiNE Canary Cloud'
+            ? 'Palcon AI'
             : env.namespaces.beta
-              ? 'AFFiNE Beta Cloud'
-              : 'AFFiNE Cloud'),
+              ? 'Palcon AI Beta'
+              : 'Palcon AI'),
       version: env.version,
       baseUrl: this.url.requestBaseUrl,
       type: env.DEPLOYMENT_TYPE,

@@ -11,7 +11,6 @@ import {
   IntegrationsIcon,
   PaymentIcon,
   PropertyIcon,
-  SaveIcon,
   SettingsIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -24,7 +23,6 @@ import { WorkspaceSettingLicense } from './license';
 import { MembersPanel } from './members';
 import { WorkspaceSettingDetail } from './preference';
 import { WorkspaceSettingProperties } from './properties';
-import { WorkspaceSettingStorage } from './storage';
 
 export const WorkspaceSetting = ({
   activeTab,
@@ -49,8 +47,6 @@ export const WorkspaceSetting = ({
       );
     case 'workspace:billing':
       return <WorkspaceSettingBilling />;
-    case 'workspace:storage':
-      return <WorkspaceSettingStorage onCloseSetting={onCloseSetting} />;
     case 'workspace:license':
       return <WorkspaceSettingLicense onCloseSetting={onCloseSetting} />;
     case 'workspace:integrations':
@@ -98,18 +94,13 @@ export const useWorkspaceSettingList = (): SettingSidebarItem[] => {
         icon: <CollaborationIcon />,
         testId: 'workspace-setting:members',
       },
-      {
-        key: 'workspace:integrations',
-        title: t['com.affine.integration.integrations'](),
-        icon: <IntegrationsIcon />,
-        testId: 'workspace-setting:integrations',
-      },
-      {
-        key: 'workspace:storage',
-        title: t['Storage'](),
-        icon: <SaveIcon />,
-        testId: 'workspace-setting:storage',
-      },
+      // Integrations panel disabled
+      // {
+      //   key: 'workspace:integrations',
+      //   title: t['com.affine.integration.integrations'](),
+      //   icon: <IntegrationsIcon />,
+      //   testId: 'workspace-setting:integrations',
+      // },
       {
         key: 'workspace:embedding',
         title:

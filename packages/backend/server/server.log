@@ -1,0 +1,21 @@
+[33m[nodemon] 3.1.10[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `node ./src/index.ts`[39m
+node:internal/modules/esm/get_format:160
+  throw new ERR_UNKNOWN_FILE_EXTENSION(ext, filepath);
+        ^
+
+TypeError [ERR_UNKNOWN_FILE_EXTENSION]: Unknown file extension ".ts" for /Users/winnie/Documents/GitHub/AFFiNE/packages/backend/server/src/index.ts
+[90m    at Object.getFileProtocolModuleFormat [as file:] (node:internal/modules/esm/get_format:160:9)[39m
+[90m    at defaultGetFormat (node:internal/modules/esm/get_format:203:36)[39m
+[90m    at defaultLoad (node:internal/modules/esm/load:143:22)[39m
+[90m    at async ModuleLoader.load (node:internal/modules/esm/loader:553:7)[39m
+[90m    at async ModuleLoader.moduleProvider (node:internal/modules/esm/loader:434:45)[39m
+[90m    at async link (node:internal/modules/esm/module_job:87:21)[39m {
+  code: [32m'ERR_UNKNOWN_FILE_EXTENSION'[39m
+}
+
+Node.js v20.17.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m

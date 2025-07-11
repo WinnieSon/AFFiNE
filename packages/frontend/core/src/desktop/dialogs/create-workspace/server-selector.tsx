@@ -65,10 +65,11 @@ export const ServerSelector = ({
       }}
       items={
         <ul className={styles.list} data-testid="server-selector-list">
-          <LocalSelectorItem
+          {/* Local workspace option disabled */}
+          {/* <LocalSelectorItem
             onSelect={onChange}
             active={selectedId === 'local'}
-          />
+          /> */}
           {servers.map(server => (
             <ServerSelectorItem
               key={server.id}
