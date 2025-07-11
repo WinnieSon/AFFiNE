@@ -26,7 +26,20 @@
       "Bash(fi)",
       "Bash(done)",
       "Bash(for f in *.json)",
-      "Bash(do sed -i '' 's/Falcon/Palcon/g' \"$f\")"
+      "Bash(do sed -i '' 's/Falcon/Palcon/g' \"$f\")",
+      "Bash(chmod:*)",
+      "Bash(yarn test:*)",
+      "Bash(yarn workspace @affine/server test controller.spec.ts)",
+      "Bash(yarn workspace @affine/server test:*)",
+      "Bash(rm:*)",
+      "Bash(yarn ava:*)",
+      "Bash(touch:*)",
+      "Bash(yarn affine:*)",
+      "Bash(/dev/null)",
+      "Bash(git restore:*)",
+      "Bash(git add:*)",
+      "Bash(yarn dev)",
+      "Bash(yarn workspace @affine/server:*)"
     ],
     "deny": []
   }
