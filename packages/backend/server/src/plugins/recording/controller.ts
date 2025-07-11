@@ -18,7 +18,7 @@ interface RecordingStatusUpdate {
 }
 
 interface RecordingEvent {
-  type: 'recording_start' | 'recording_stop' | 'recording_update' | 'recording_reset';
+  type: 'recording_start' | 'recording_stop' | 'recording_processing' | 'recording_update' | 'recording_reset';
   workspaceId: string;
   data?: any;
   timestamp: Date;
@@ -63,6 +63,30 @@ export class RecordingController {
       data: {
         meetingId: data.meetingId,
         device: data.device,
+      },
+      timestamp: new Date(),
+    };
+    
+    this.addEventForWorkspace(workspaceId, event);
+    
+    return {
+      success: true,
+      meetingId: data.meetingId,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Public()
+  @Post(':workspaceId/processing')
+  async startProcessing(
+    @Param('workspaceId') workspaceId: string,
+    @Body() data: { meetingId?: string }
+  ) {
+    const event: RecordingEvent = {
+      type: 'recording_processing',
+      workspaceId,
+      data: {
+        meetingId: data.meetingId,
       },
       timestamp: new Date(),
     };

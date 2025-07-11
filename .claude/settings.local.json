@@ -42,7 +42,8 @@
       "Bash(yarn workspace @affine/server:*)",
       "Bash(yarn lint:*)",
       "Bash(git rebase:*)",
-      "Bash(yarn dev:*)"
+      "Bash(yarn dev:*)",
+      "Bash(yarn eslint:*)"
     ],
     "deny": []
   }

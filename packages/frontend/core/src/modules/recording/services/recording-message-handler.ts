@@ -3,7 +3,7 @@ import { Service } from '@toeverything/infra';
 import { RecordingService } from './recording-service';
 
 export interface RecordingMessage {
-  type: 'recording_start' | 'recording_stop' | 'recording_update' | 'recording_reset';
+  type: 'recording_start' | 'recording_stop' | 'recording_processing' | 'recording_update' | 'recording_reset';
   data?: {
     meetingId?: string;
     meetingCount?: number;
@@ -71,15 +71,15 @@ export class RecordingMessageHandler extends Service {
     try {
       const response = await fetch(`/api/recording/${this.workspaceId}/events?since=${this.lastEventIndex}`);
       if (response.ok) {
-        const data = await response.json();
-        console.log(`[${this.workspaceId}] Polling events since ${this.lastEventIndex}, got ${data.events.length} events`);
+        const data = await response.json() as { events: RecordingMessage[]; nextIndex: number };
+        void console.log(`[${this.workspaceId}] Polling events since ${this.lastEventIndex}, got ${data.events?.length || 0} events`);
         
         if (data.events && Array.isArray(data.events) && data.events.length > 0) {
           data.events.forEach((event: RecordingMessage) => {
             this.handleRecordingMessage(event);
           });
           this.lastEventIndex = data.nextIndex;
-          console.log(`[${this.workspaceId}] Updated lastEventIndex to ${this.lastEventIndex}`);
+          void console.log(`[${this.workspaceId}] Updated lastEventIndex to ${this.lastEventIndex}`);
         }
       }
     } catch (error) {
@@ -87,13 +87,10 @@ export class RecordingMessageHandler extends Service {
     }
   }
 
-  private handleWindowMessage = (event: MessageEvent) => {
+  private readonly handleWindowMessage = (event: MessageEvent) => {
     // Only accept messages from same origin or trusted origins
-    if (event.origin !== window.location.origin) {
-      // For development, you might want to allow localhost origins
-      if (!event.origin.includes('localhost') && !event.origin.includes('127.0.0.1')) {
-        return;
-      }
+    if (event.origin !== window.location.origin && !event.origin.includes('localhost') && !event.origin.includes('127.0.0.1')) {
+      return;
     }
 
     try {
@@ -106,7 +103,7 @@ export class RecordingMessageHandler extends Service {
     }
   };
 
-  private handleCustomEvent = (event: CustomEvent<RecordingMessage>) => {
+  private readonly handleCustomEvent = (event: CustomEvent<RecordingMessage>) => {
     try {
       const message = event.detail;
       if (this.isValidRecordingMessage(message)) {
@@ -118,12 +115,10 @@ export class RecordingMessageHandler extends Service {
   };
 
   private isValidRecordingMessage(message: any): message is RecordingMessage {
-    return (
-      message &&
-      typeof message === 'object' &&
-      typeof message.type === 'string' &&
-      ['recording_start', 'recording_stop', 'recording_update', 'recording_reset'].includes(message.type)
-    );
+    if (!message || typeof message !== 'object' || typeof message.type !== 'string') {
+      return false;
+    }
+    return ['recording_start', 'recording_stop', 'recording_processing', 'recording_update', 'recording_reset'].includes(message.type);
   }
 
   private handleRecordingMessage(message: RecordingMessage) {
@@ -135,6 +130,10 @@ export class RecordingMessageHandler extends Service {
           message.data?.meetingId, 
           message.data?.device
         );
+        break;
+      
+      case 'recording_processing':
+        this.recordingService.startProcessing(message.data?.meetingId);
         break;
       
       case 'recording_stop':

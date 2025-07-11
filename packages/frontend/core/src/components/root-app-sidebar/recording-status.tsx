@@ -52,6 +52,7 @@ export const RecordingStatus = () => {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         isRecording={isRecording}
+        recordingInfo={recordingInfo}
         meetingDetails={recordingInfo.meetingDetails}
         waitingDevices={recordingInfo.waitingDevices}
         currentTime={currentTime}

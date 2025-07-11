@@ -200,3 +200,20 @@ export const closeButton = style({
     transform: 'translateY(0)',
   },
 });
+
+export const processingInfo = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+});
+
+export const processingMessage = style({
+  padding: '16px',
+  background: 'rgba(255, 193, 7, 0.1)',
+  color: '#ff9800',
+  borderRadius: '8px',
+  fontSize: '14px',
+  fontWeight: 500,
+  textAlign: 'center',
+  border: '1px solid rgba(255, 193, 7, 0.3)',
+});

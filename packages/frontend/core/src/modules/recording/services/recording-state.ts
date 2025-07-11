@@ -9,7 +9,7 @@ export interface MeetingInfo {
 
 export interface RecordingInfo {
   id: string;
-  status: 'idle' | 'recording';
+  status: 'idle' | 'recording' | 'processing';
   meetingCount: number;
   activeMeetings: string[]; // 활성 회의 ID 목록
   meetingDetails: MeetingInfo[]; // 상세 회의 정보
@@ -31,7 +31,7 @@ export class RecordingState extends Service {
 
   readonly isRecording$ = LiveData.from(
     this.recordingInfo$.pipe(
-      map(info => info.status === 'recording')
+      map(info => info.status === 'recording' || info.status === 'processing')
     ),
     false
   );
@@ -39,10 +39,15 @@ export class RecordingState extends Service {
   readonly statusText$ = LiveData.from(
     this.recordingInfo$.pipe(
       map(info => {
-        if (info.status === 'idle') {
-          return '대기중 ..';
-        } else {
-          return '기록중';
+        switch (info.status) {
+          case 'idle':
+            return '대기중 ..';
+          case 'recording':
+            return '기록중';
+          case 'processing':
+            return '기록중 ..';
+          default:
+            return '대기중 ..';
         }
       })
     ),
@@ -93,6 +98,17 @@ export class RecordingState extends Service {
       activeMeetings: [...current.activeMeetings, newMeetingId],
       meetingDetails: [...current.meetingDetails, newMeeting],
       startTime: current.startTime || new Date(),
+    });
+  }
+
+  startProcessing(meetingId?: string) {
+    const current = this._recordingInfo$.value;
+    this.setRecordingInfo({
+      status: 'processing',
+      // Keep existing meetings and details during processing
+      activeMeetings: current.activeMeetings,
+      meetingDetails: current.meetingDetails,
+      meetingCount: current.meetingCount,
     });
   }
 

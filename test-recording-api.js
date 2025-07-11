@@ -64,6 +64,14 @@ async function startRecording(workspaceId, meetingId) {
   console.log('Response:', result);
 }
 
+async function startProcessing(workspaceId, meetingId) {
+  console.log(`Starting processing for meeting: ${meetingId} in workspace: ${workspaceId}`);
+  const result = await makeRequest('POST', `/api/recording/${workspaceId}/processing`, {
+    meetingId: meetingId
+  });
+  console.log('Response:', result);
+}
+
 async function stopRecording(workspaceId, meetingId) {
   console.log(`Stopping recording for meeting: ${meetingId} in workspace: ${workspaceId}`);
   const result = await makeRequest('POST', `/api/recording/${workspaceId}/stop`, {
@@ -121,19 +129,23 @@ async function runDemo(workspaceId) {
   await startRecording(workspaceId, '13A');
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  console.log('\n4. Start recording for 13B');
+  console.log('\n4. Start processing');
+  await startProcessing(workspaceId, '13A');
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
+  console.log('\n5. Start recording for 13B');
   await startRecording(workspaceId, '13B');
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  console.log('\n5. Update status');
+  console.log('\n6. Update status');
   await updateRecording(workspaceId);
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  console.log('\n6. Stop recording for 13A');
+  console.log('\n7. Stop recording for 13A');
   await stopRecording(workspaceId, '13A');
   await new Promise(resolve => setTimeout(resolve, 2000));
 
-  console.log('\n7. Get final status');
+  console.log('\n8. Get final status');
   await getStatus(workspaceId);
 }
 
@@ -158,6 +170,14 @@ const arg = process.argv[4];
           process.exit(1);
         }
         await startRecording(workspaceId, arg);
+        break;
+      
+      case 'processing':
+        if (!arg) {
+          console.error('Please provide meeting ID');
+          process.exit(1);
+        }
+        await startProcessing(workspaceId, arg);
         break;
       
       case 'stop':
@@ -191,6 +211,7 @@ const arg = process.argv[4];
       default:
         console.log('Usage:');
         console.log('  node test-recording-api.js <workspace-id> start <meetingId>');
+        console.log('  node test-recording-api.js <workspace-id> processing <meetingId>');
         console.log('  node test-recording-api.js <workspace-id> stop <meetingId>');
         console.log('  node test-recording-api.js <workspace-id> update');
         console.log('  node test-recording-api.js <workspace-id> waiting');

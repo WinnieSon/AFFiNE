@@ -49,6 +49,11 @@ export class RecordingService extends Service {
     console.log('Recording started:', meetingId, device);
   }
 
+  startProcessing(meetingId?: string) {
+    this.recordingState.startProcessing(meetingId);
+    console.log('Processing started:', meetingId);
+  }
+
   stopRecording(meetingId?: string) {
     this.recordingState.stopRecording(meetingId);
     console.log('Recording stopped:', meetingId);
