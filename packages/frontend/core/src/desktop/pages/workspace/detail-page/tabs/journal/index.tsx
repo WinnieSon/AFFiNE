@@ -173,7 +173,7 @@ export const EditorJournalPanel = () => {
       ) : (
         <div className={styles.spacer} />
       )}
-      <JournalTemplateSetting />
+      {/* <JournalTemplateSetting /> */}
     </div>
   );
 };

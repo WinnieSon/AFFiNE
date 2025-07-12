@@ -5,6 +5,8 @@ export interface MeetingInfo {
   id: string;
   startTime: Date;
   device?: string;
+  description?: string;
+  status: 'recording' | 'processing';
 }
 
 export interface RecordingInfo {
@@ -60,7 +62,7 @@ export class RecordingState extends Service {
         if (info.status === 'idle') {
           return '기록중인 회의 없음';
         } else {
-          return `(${info.meetingCount})`;
+          return `${info.meetingCount}개의 회의를 기록중`;
         }
       })
     ),
@@ -75,7 +77,7 @@ export class RecordingState extends Service {
     });
   }
 
-  startRecording(meetingId?: string, device?: string) {
+  startRecording(meetingId?: string, device?: string, startTime?: string, description?: string) {
     const current = this._recordingInfo$.value;
     const newMeetingId = meetingId || `meeting_${Date.now()}`;
     
@@ -87,8 +89,10 @@ export class RecordingState extends Service {
     
     const newMeeting: MeetingInfo = {
       id: newMeetingId,
-      startTime: new Date(),
+      startTime: startTime ? new Date(startTime) : new Date(),
       device,
+      description,
+      status: 'recording',
     };
     
     this.setRecordingInfo({
@@ -101,14 +105,54 @@ export class RecordingState extends Service {
     });
   }
 
-  startProcessing(meetingId?: string) {
+  startProcessing(meetingId?: string, startTime?: string, device?: string, description?: string) {
     const current = this._recordingInfo$.value;
+    
+    if (!meetingId) {
+      // 미팅 ID가 없으면 전체 상태를 processing으로 변경
+      this.setRecordingInfo({
+        status: 'processing',
+      });
+      return;
+    }
+    
+    // 특정 미팅의 상태를 processing으로 변경
+    let updatedDetails = [...current.meetingDetails];
+    const existingMeetingIndex = updatedDetails.findIndex(m => m.id === meetingId);
+    
+    if (existingMeetingIndex >= 0) {
+      // 기존 미팅의 상태만 변경
+      updatedDetails[existingMeetingIndex] = {
+        ...updatedDetails[existingMeetingIndex],
+        status: 'processing',
+      };
+    } else {
+      // 새로운 미팅 생성 (start를 거치지 않은 경우)
+      const newMeeting: MeetingInfo = {
+        id: meetingId,
+        startTime: startTime ? new Date(startTime) : new Date(),
+        device,
+        description,
+        status: 'processing',
+      };
+      updatedDetails.push(newMeeting);
+      
+      // activeMeetings에도 추가
+      if (!current.activeMeetings.includes(meetingId)) {
+        this.setRecordingInfo({
+          activeMeetings: [...current.activeMeetings, meetingId],
+          meetingCount: current.meetingCount + 1,
+        });
+      }
+    }
+    
+    // 적어도 하나의 미팅이 recording 상태면 전체 상태는 recording
+    const hasRecording = updatedDetails.some(m => m.status === 'recording');
+    const overallStatus = hasRecording ? 'recording' : 'processing';
+    
     this.setRecordingInfo({
-      status: 'processing',
-      // Keep existing meetings and details during processing
-      activeMeetings: current.activeMeetings,
-      meetingDetails: current.meetingDetails,
-      meetingCount: current.meetingCount,
+      status: overallStatus,
+      meetingDetails: updatedDetails,
     });
   }
 
@@ -145,5 +189,46 @@ export class RecordingState extends Service {
       waitingDevices: [],
       startTime: undefined,
     });
+  }
+  
+  updateActiveMeetingTimes(activeMeetings: Array<{ meetingId: string; startTime: string; device?: string; description?: string }>) {
+    const current = this._recordingInfo$.value;
+    
+    // Update meeting details with server-provided start times
+    const updatedDetails = current.meetingDetails.map(meeting => {
+      const serverMeeting = activeMeetings.find(m => m.meetingId === meeting.id);
+      if (serverMeeting) {
+        return {
+          ...meeting,
+          startTime: new Date(serverMeeting.startTime),
+          device: serverMeeting.device || meeting.device,
+          description: serverMeeting.description || meeting.description,
+        };
+      }
+      return meeting;
+    });
+    
+    // Add any new meetings from server that we don't have locally
+    activeMeetings.forEach(serverMeeting => {
+      if (!current.meetingDetails.find(m => m.id === serverMeeting.meetingId)) {
+        updatedDetails.push({
+          id: serverMeeting.meetingId,
+          startTime: new Date(serverMeeting.startTime),
+          device: serverMeeting.device,
+          description: serverMeeting.description,
+          status: 'recording', // 서버에서 온 새 미팅은 기본적으로 recording 상태
+        });
+      }
+    });
+    
+    if (updatedDetails.length !== current.meetingDetails.length || 
+        updatedDetails.some((m, i) => m.startTime?.getTime() !== current.meetingDetails[i]?.startTime?.getTime())) {
+      this.setRecordingInfo({
+        meetingDetails: updatedDetails,
+        activeMeetings: activeMeetings.map(m => m.meetingId),
+        meetingCount: activeMeetings.length,
+        status: activeMeetings.length > 0 ? current.status : 'idle',
+      });
+    }
   }
 }

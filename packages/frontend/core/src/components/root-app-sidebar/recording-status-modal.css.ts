@@ -24,7 +24,7 @@ export const modalContent = style({
 export const modalHeader = style({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'space-between',
+  justifyContent: 'center',
   padding: '20px 24px',
   borderBottom: `1px solid ${cssVar('borderColor')}`,
   background: cssVar('backgroundPrimaryColor'),
@@ -89,6 +89,12 @@ export const meetingHeader = style({
   borderRadius: '8px',
 });
 
+export const meetingInfo = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
+});
+
 export const meetingId = style({
   fontSize: '16px',
   fontWeight: 500,
@@ -104,21 +110,17 @@ export const elapsedTime = style({
   borderRadius: '16px',
 });
 
-export const deviceInfo = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  paddingLeft: '16px',
-  fontSize: '13px',
-  color: cssVar('textSecondaryColor'),
-});
-
-export const deviceLabel = style({
-  opacity: 0.7,
+export const description = style({
+  fontSize: '14px',
+  color: cssVar('textPrimaryColor'),
+  fontWeight: 400,
+  opacity: 0.8,
 });
 
 export const deviceName = style({
-  fontWeight: 500,
+  fontSize: '13px',
+  color: cssVar('textSecondaryColor'),
+  fontWeight: 400,
 });
 
 export const divider = style({
@@ -201,19 +203,3 @@ export const closeButton = style({
   },
 });
 
-export const processingInfo = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '16px',
-});
-
-export const processingMessage = style({
-  padding: '16px',
-  background: 'rgba(255, 193, 7, 0.1)',
-  color: '#ff9800',
-  borderRadius: '8px',
-  fontSize: '14px',
-  fontWeight: 500,
-  textAlign: 'center',
-  border: '1px solid rgba(255, 193, 7, 0.3)',
-});

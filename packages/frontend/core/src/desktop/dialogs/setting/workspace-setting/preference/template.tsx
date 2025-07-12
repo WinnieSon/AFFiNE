@@ -50,7 +50,7 @@ export const TemplateDocSetting = () => {
 
   return (
     <SettingWrapper title={t['com.affine.settings.workspace.template.title']()}>
-      <SettingRow
+      {/* <SettingRow
         name={t['com.affine.settings.workspace.template.journal']()}
         desc={t['com.affine.settings.workspace.template.journal-desc']()}
       >
@@ -59,7 +59,7 @@ export const TemplateDocSetting = () => {
           current={journalTemplateDocId}
           onChange={updateJournalTemplate}
         />
-      </SettingRow>
+      </SettingRow> */}
       <SettingRow
         name={t['com.affine.settings.workspace.template.page']()}
         desc={t['com.affine.settings.workspace.template.page-desc']()}

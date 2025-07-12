@@ -44,14 +44,14 @@ export class RecordingService extends Service {
     return this.recordingState.statusSubText$;
   }
 
-  startRecording(meetingId?: string, device?: string) {
-    this.recordingState.startRecording(meetingId, device);
-    console.log('Recording started:', meetingId, device);
+  startRecording(meetingId?: string, device?: string, startTime?: string, description?: string) {
+    this.recordingState.startRecording(meetingId, device, startTime, description);
+    console.log('Recording started:', meetingId, device, startTime, description);
   }
 
-  startProcessing(meetingId?: string) {
-    this.recordingState.startProcessing(meetingId);
-    console.log('Processing started:', meetingId);
+  startProcessing(meetingId?: string, startTime?: string, device?: string, description?: string) {
+    this.recordingState.startProcessing(meetingId, startTime, device, description);
+    console.log('Processing started:', meetingId, startTime, device, description);
   }
 
   stopRecording(meetingId?: string) {
@@ -66,6 +66,10 @@ export class RecordingService extends Service {
   reset() {
     this.recordingState.reset();
     console.log('Recording state reset');
+  }
+  
+  updateActiveMeetingTimes(activeMeetings: Array<{ meetingId: string; startTime: string; device?: string; description?: string }>) {
+    this.recordingState.updateActiveMeetingTimes(activeMeetings);
   }
 
   // External message handler for window communication

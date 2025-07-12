@@ -71,7 +71,16 @@ export class RecordingMessageHandler extends Service {
     try {
       const response = await fetch(`/api/recording/${this.workspaceId}/events?since=${this.lastEventIndex}`);
       if (response.ok) {
-        const data = await response.json() as { events: RecordingMessage[]; nextIndex: number };
+        const data = await response.json() as { 
+          events: RecordingMessage[]; 
+          nextIndex: number;
+          activeMeetings?: Array<{
+            meetingId: string;
+            startTime: string;
+            device?: string;
+            description?: string;
+          }>;
+        };
         void console.log(`[${this.workspaceId}] Polling events since ${this.lastEventIndex}, got ${data.events?.length || 0} events`);
         
         if (data.events && Array.isArray(data.events) && data.events.length > 0) {
@@ -80,6 +89,11 @@ export class RecordingMessageHandler extends Service {
           });
           this.lastEventIndex = data.nextIndex;
           void console.log(`[${this.workspaceId}] Updated lastEventIndex to ${this.lastEventIndex}`);
+        }
+        
+        // 활성 미팅의 시작 시간 정보 업데이트
+        if (data.activeMeetings) {
+          this.recordingService.updateActiveMeetingTimes(data.activeMeetings);
         }
       }
     } catch (error) {
@@ -128,12 +142,19 @@ export class RecordingMessageHandler extends Service {
       case 'recording_start':
         this.recordingService.startRecording(
           message.data?.meetingId, 
-          message.data?.device
+          message.data?.device,
+          message.data?.startTime,
+          message.data?.description
         );
         break;
       
       case 'recording_processing':
-        this.recordingService.startProcessing(message.data?.meetingId);
+        this.recordingService.startProcessing(
+          message.data?.meetingId, 
+          message.data?.startTime,
+          message.data?.device,
+          message.data?.description
+        );
         break;
       
       case 'recording_stop':

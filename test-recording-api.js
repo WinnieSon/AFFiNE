@@ -55,19 +55,22 @@ function makeRequest(method, path, data = null) {
   });
 }
 
-async function startRecording(workspaceId, meetingId) {
+async function startRecording(workspaceId, meetingId, description) {
   console.log(`Starting recording for meeting: ${meetingId} in workspace: ${workspaceId}`);
   const result = await makeRequest('POST', `/api/recording/${workspaceId}/start`, {
     meetingId: meetingId,
-    device: 'Device_' + meetingId
+    device: 'Device_' + meetingId,
+    description: description || `Meeting ${meetingId} recording`
   });
   console.log('Response:', result);
 }
 
-async function startProcessing(workspaceId, meetingId) {
+async function startProcessing(workspaceId, meetingId, description) {
   console.log(`Starting processing for meeting: ${meetingId} in workspace: ${workspaceId}`);
   const result = await makeRequest('POST', `/api/recording/${workspaceId}/processing`, {
-    meetingId: meetingId
+    meetingId: meetingId,
+    device: 'Device_' + meetingId,
+    description: description || `Meeting ${meetingId} processing`
   });
   console.log('Response:', result);
 }
@@ -169,7 +172,7 @@ const arg = process.argv[4];
           console.error('Please provide meeting ID');
           process.exit(1);
         }
-        await startRecording(workspaceId, arg);
+        await startRecording(workspaceId, arg, process.argv[5]);
         break;
       
       case 'processing':
@@ -177,7 +180,7 @@ const arg = process.argv[4];
           console.error('Please provide meeting ID');
           process.exit(1);
         }
-        await startProcessing(workspaceId, arg);
+        await startProcessing(workspaceId, arg, process.argv[5]);
         break;
       
       case 'stop':

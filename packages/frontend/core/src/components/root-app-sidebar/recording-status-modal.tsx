@@ -1,6 +1,4 @@
 import { Modal } from '@affine/component/ui/modal';
-import { CloseIcon } from '@blocksuite/icons/rc';
-import { IconButton } from '@affine/component/ui/button';
 import type { MeetingInfo, RecordingInfo } from '../../modules/recording';
 
 import * as styles from './recording-status-modal.css';
@@ -53,56 +51,30 @@ export const RecordingStatusModal = ({
         <div className={styles.titleSection}>
           <div className={`${styles.statusDot} ${isRecording ? styles.recording : styles.idle}`} />
           <h2 className={styles.modalTitle}>
-            {recordingInfo.status === 'processing' ? '처리 중' : isRecording ? '녹음 진행 중' : '대기 상태'}
+            {isRecording ? '실시간 기록/분석중 ...' : '대기 상태'}
           </h2>
         </div>
-        <IconButton onClick={onClose} size="20">
-          <CloseIcon />
-        </IconButton>
       </div>
 
       <div className={styles.modalBody}>
-        {recordingInfo.status === 'processing' ? (
-          <div className={styles.meetingList}>
-            <div className={styles.processingInfo}>
-              <div className={styles.processingMessage}>
-                녹음된 내용을 처리하고 있습니다...
-              </div>
-              {meetingDetails.map((meeting, index) => (
-                <div key={meeting.id} className={styles.meetingItem}>
-                  <div className={styles.meetingHeader}>
-                    <div className={styles.meetingId}>{meeting.id}</div>
-                    <div className={styles.elapsedTime}>
-                      처리 중
-                    </div>
-                  </div>
-                  {meeting.device && (
-                    <div className={styles.deviceInfo}>
-                      <span className={styles.deviceLabel}>기기:</span>
-                      <span className={styles.deviceName}>{meeting.device}</span>
-                    </div>
-                  )}
-                  {index < meetingDetails.length - 1 && <div className={styles.divider} />}
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : isRecording && meetingDetails.length > 0 ? (
+        {isRecording && meetingDetails.length > 0 ? (
           <div className={styles.meetingList}>
             {meetingDetails.map((meeting, index) => (
               <div key={meeting.id} className={styles.meetingItem}>
                 <div className={styles.meetingHeader}>
-                  <div className={styles.meetingId}>{meeting.id}</div>
+                  <div className={styles.meetingInfo}>
+                    <div className={styles.meetingId}>{meeting.id}</div>
+                    {meeting.description && (
+                      <div className={styles.description}>{meeting.description}</div>
+                    )}
+                    {meeting.device && (
+                      <div className={styles.deviceName}>{meeting.device}</div>
+                    )}
+                  </div>
                   <div className={styles.elapsedTime}>
-                    {formatElapsedTime(meeting.startTime)}
+                    {meeting.status === 'processing' ? '분석중' : formatElapsedTime(meeting.startTime)}
                   </div>
                 </div>
-                {meeting.device && (
-                  <div className={styles.deviceInfo}>
-                    <span className={styles.deviceLabel}>기기:</span>
-                    <span className={styles.deviceName}>{meeting.device}</span>
-                  </div>
-                )}
                 {index < meetingDetails.length - 1 && <div className={styles.divider} />}
               </div>
             ))}
