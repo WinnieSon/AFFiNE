@@ -17,10 +17,11 @@ export interface RecordingInfo {
   meetingDetails: MeetingInfo[]; // 상세 회의 정보
   waitingDevices: string[]; // 대기중인 기기 목록
   startTime?: Date; // 첫 번째 녹음 시작 시간
+  device?: string; // Current device (for updates)
 }
 
 export class RecordingState extends Service {
-  private _recordingInfo$ = new LiveData<RecordingInfo>({
+  private readonly _recordingInfo$ = new LiveData<RecordingInfo>({
     id: 'default',
     status: 'idle',
     meetingCount: 0,
@@ -71,22 +72,72 @@ export class RecordingState extends Service {
 
   setRecordingInfo(info: Partial<RecordingInfo>) {
     const current = this._recordingInfo$.value;
-    this._recordingInfo$.next({
+
+    // Check if this is a device-specific status update
+    const isDeviceUpdate = !!(info.device && (info as any).status);
+
+    // For device updates, we only want to handle the device state transition
+    // without modifying other recording info
+    let updateInfo = info;
+    if (isDeviceUpdate) {
+      // Remove the device-specific status to prevent overwriting global status
+      const { status: _, device, ...rest } = info;
+      updateInfo = { device, ...rest };
+    }
+
+    // Deep merge to preserve arrays when they're not explicitly provided
+    const merged: RecordingInfo = {
       ...current,
-      ...info,
-    });
+      ...updateInfo,
+      // Only update global status if it's a valid RecordingInfo status
+      status:
+        info.status && ['idle', 'recording', 'processing'].includes(info.status)
+          ? info.status
+          : current.status,
+      // Preserve arrays if not provided in the update
+      activeMeetings: info.activeMeetings ?? current.activeMeetings,
+      meetingDetails: info.meetingDetails ?? current.meetingDetails,
+      waitingDevices: info.waitingDevices ?? current.waitingDevices,
+    };
+
+    // Handle device status transitions from backend update messages
+    // Note: 'waiting' status comes from backend but isn't part of RecordingInfo.status
+    if (info.device && (info as any).status) {
+      const updateStatus = (info as any).status;
+      if (updateStatus === 'waiting') {
+        // Add device to waiting list if not already there
+        if (!merged.waitingDevices.includes(info.device)) {
+          merged.waitingDevices = [...merged.waitingDevices, info.device];
+        }
+      } else if (
+        updateStatus === 'recording' ||
+        updateStatus === 'processing'
+      ) {
+        // Remove device from waiting list when it starts recording/processing
+        merged.waitingDevices = merged.waitingDevices.filter(
+          d => d !== info.device
+        );
+      }
+    }
+
+    this._recordingInfo$.next(merged);
   }
 
-  startRecording(meetingId?: string, device?: string, startTime?: string, description?: string) {
+  startRecording(
+    meetingId?: string,
+    device?: string,
+    startTime?: string,
+    description?: string
+  ) {
     const current = this._recordingInfo$.value;
     const newMeetingId = meetingId || `meeting_${Date.now()}`;
-    
+
     // Check if meeting already exists
     if (current.activeMeetings.includes(newMeetingId)) {
       console.log(`Meeting ${newMeetingId} is already recording`);
       return;
     }
-    
+
     const newMeeting: MeetingInfo = {
       id: newMeetingId,
       startTime: startTime ? new Date(startTime) : new Date(),
@@ -94,7 +145,7 @@ export class RecordingState extends Service {
       description,
       status: 'recording',
     };
-    
+
     this.setRecordingInfo({
       id: newMeetingId,
       status: 'recording',
@@ -105,9 +156,14 @@ export class RecordingState extends Service {
     });
   }
 
-  startProcessing(meetingId?: string, startTime?: string, device?: string, description?: string) {
+  startProcessing(
+    meetingId?: string,
+    startTime?: string,
+    device?: string,
+    description?: string
+  ) {
     const current = this._recordingInfo$.value;
-    
+
     if (!meetingId) {
       // 미팅 ID가 없으면 전체 상태를 processing으로 변경
       this.setRecordingInfo({
@@ -115,11 +171,13 @@ export class RecordingState extends Service {
       });
       return;
     }
-    
+
     // 특정 미팅의 상태를 processing으로 변경
     let updatedDetails = [...current.meetingDetails];
-    const existingMeetingIndex = updatedDetails.findIndex(m => m.id === meetingId);
-    
+    const existingMeetingIndex = updatedDetails.findIndex(
+      m => m.id === meetingId
+    );
+
     if (existingMeetingIndex >= 0) {
       // 기존 미팅의 상태만 변경
       updatedDetails[existingMeetingIndex] = {
@@ -136,7 +194,7 @@ export class RecordingState extends Service {
         status: 'processing',
       };
       updatedDetails.push(newMeeting);
-      
+
       // activeMeetings에도 추가
       if (!current.activeMeetings.includes(meetingId)) {
         this.setRecordingInfo({
@@ -145,11 +203,11 @@ export class RecordingState extends Service {
         });
       }
     }
-    
+
     // 적어도 하나의 미팅이 recording 상태면 전체 상태는 recording
     const hasRecording = updatedDetails.some(m => m.status === 'recording');
     const overallStatus = hasRecording ? 'recording' : 'processing';
-    
+
     this.setRecordingInfo({
       status: overallStatus,
       meetingDetails: updatedDetails,
@@ -160,7 +218,7 @@ export class RecordingState extends Service {
     const current = this._recordingInfo$.value;
     let updatedMeetings = current.activeMeetings;
     let updatedDetails = current.meetingDetails;
-    
+
     if (meetingId) {
       updatedMeetings = current.activeMeetings.filter(id => id !== meetingId);
       updatedDetails = current.meetingDetails.filter(m => m.id !== meetingId);
@@ -169,13 +227,14 @@ export class RecordingState extends Service {
       updatedMeetings = current.activeMeetings.slice(0, -1);
       updatedDetails = current.meetingDetails.slice(0, -1);
     }
-    
+
     this.setRecordingInfo({
       status: updatedMeetings.length > 0 ? 'recording' : 'idle',
       meetingCount: updatedMeetings.length,
       activeMeetings: updatedMeetings,
       meetingDetails: updatedDetails,
-      startTime: updatedDetails.length > 0 ? updatedDetails[0].startTime : undefined,
+      startTime:
+        updatedDetails.length > 0 ? updatedDetails[0].startTime : undefined,
     });
   }
 
@@ -190,13 +249,22 @@ export class RecordingState extends Service {
       startTime: undefined,
     });
   }
-  
-  updateActiveMeetingTimes(activeMeetings: Array<{ meetingId: string; startTime: string; device?: string; description?: string }>) {
+
+  updateActiveMeetingTimes(
+    activeMeetings: Array<{
+      meetingId: string;
+      startTime: string;
+      device?: string;
+      description?: string;
+    }>
+  ) {
     const current = this._recordingInfo$.value;
-    
+
     // Update meeting details with server-provided start times
     const updatedDetails = current.meetingDetails.map(meeting => {
-      const serverMeeting = activeMeetings.find(m => m.meetingId === meeting.id);
+      const serverMeeting = activeMeetings.find(
+        m => m.meetingId === meeting.id
+      );
       if (serverMeeting) {
         return {
           ...meeting,
@@ -207,7 +275,7 @@ export class RecordingState extends Service {
       }
       return meeting;
     });
-    
+
     // Add any new meetings from server that we don't have locally
     activeMeetings.forEach(serverMeeting => {
       if (!current.meetingDetails.find(m => m.id === serverMeeting.meetingId)) {
@@ -220,9 +288,15 @@ export class RecordingState extends Service {
         });
       }
     });
-    
-    if (updatedDetails.length !== current.meetingDetails.length || 
-        updatedDetails.some((m, i) => m.startTime?.getTime() !== current.meetingDetails[i]?.startTime?.getTime())) {
+
+    if (
+      updatedDetails.length !== current.meetingDetails.length ||
+      updatedDetails.some(
+        (m, i) =>
+          m.startTime?.getTime() !==
+          current.meetingDetails[i]?.startTime?.getTime()
+      )
+    ) {
       this.setRecordingInfo({
         meetingDetails: updatedDetails,
         activeMeetings: activeMeetings.map(m => m.meetingId),

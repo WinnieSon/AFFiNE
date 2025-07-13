@@ -277,6 +277,9 @@ export class RecordingController {
       }
     }
 
+    // Pass through the original data as-is
+    // The frontend will handle device status transitions intelligently
+
     const event: RecordingEvent = {
       type: 'recording_update',
       workspaceId,
