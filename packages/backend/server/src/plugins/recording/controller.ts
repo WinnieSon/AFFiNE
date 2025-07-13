@@ -204,9 +204,16 @@ export class RecordingController {
     @Param('workspaceId') workspaceId: string,
     @Body() data: { meetingId: string }
   ) {
-    // 미팅 시작 시간 제거
+    // Get device info before removing meeting
+    let deviceName: string | undefined;
     if (meetingStartTimesByWorkspace.has(workspaceId)) {
       const meetings = meetingStartTimesByWorkspace.get(workspaceId) ?? [];
+      const meeting = meetings.find(m => m.meetingId === data.meetingId);
+      if (meeting) {
+        deviceName = meeting.device;
+      }
+      
+      // 미팅 시작 시간 제거
       const index = meetings.findIndex(m => m.meetingId === data.meetingId);
       if (index >= 0) {
         meetings.splice(index, 1);
@@ -218,15 +225,32 @@ export class RecordingController {
       workspaceId,
       data: {
         meetingId: data.meetingId,
+        device: deviceName,
       },
       timestamp: new Date(),
     };
 
     this.addEventForWorkspace(workspaceId, event);
 
+    // Automatically transition device to waiting status
+    if (deviceName) {
+      const waitingEvent: RecordingEvent = {
+        type: 'recording_update',
+        workspaceId,
+        data: {
+          device: deviceName,
+          status: 'waiting',
+        },
+        timestamp: new Date(),
+      };
+      this.addEventForWorkspace(workspaceId, waitingEvent);
+    }
+
     return {
       success: true,
       meetingId: data.meetingId,
+      device: deviceName,
+      newStatus: 'waiting',
       timestamp: new Date().toISOString(),
     };
   }
