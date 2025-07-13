@@ -1,6 +1,6 @@
 import { Modal } from '@affine/component/ui/modal';
-import type { MeetingInfo, RecordingInfo } from '../../modules/recording';
 
+import type { MeetingInfo, RecordingInfo } from '../../modules/recording';
 import * as styles from './recording-status-modal.css';
 
 interface RecordingStatusModalProps {
@@ -24,12 +24,14 @@ export const RecordingStatusModal = ({
 }: RecordingStatusModalProps) => {
   const formatElapsedTime = (startTime: Date | undefined) => {
     if (!startTime) return '0초';
-    
-    const elapsed = Math.floor((currentTime - new Date(startTime).getTime()) / 1000);
+
+    const elapsed = Math.floor(
+      (currentTime - new Date(startTime).getTime()) / 1000
+    );
     const hours = Math.floor(elapsed / 3600);
     const minutes = Math.floor((elapsed % 3600) / 60);
     const seconds = elapsed % 60;
-    
+
     if (hours > 0) {
       return `${hours}시간 ${minutes}분`;
     } else if (minutes > 0) {
@@ -49,7 +51,9 @@ export const RecordingStatusModal = ({
     >
       <div className={styles.modalHeader}>
         <div className={styles.titleSection}>
-          <div className={`${styles.statusDot} ${isRecording ? styles.recording : styles.idle}`} />
+          <div
+            className={`${styles.statusDot} ${isRecording ? styles.recording : styles.idle}`}
+          />
           <h2 className={styles.modalTitle}>
             {isRecording ? '실시간 기록/분석중 ...' : '대기 상태'}
           </h2>
@@ -65,34 +69,47 @@ export const RecordingStatusModal = ({
                   <div className={styles.meetingInfo}>
                     <div className={styles.meetingId}>{meeting.id}</div>
                     {meeting.description && (
-                      <div className={styles.description}>{meeting.description}</div>
+                      <div className={styles.description}>
+                        {meeting.description}
+                      </div>
                     )}
                     {meeting.device && (
                       <div className={styles.deviceName}>{meeting.device}</div>
                     )}
                   </div>
                   <div className={styles.elapsedTime}>
-                    {meeting.status === 'processing' ? '분석중' : formatElapsedTime(meeting.startTime)}
+                    {meeting.status === 'processing'
+                      ? '분석중'
+                      : formatElapsedTime(meeting.startTime)}
                   </div>
                 </div>
-                {index < meetingDetails.length - 1 && <div className={styles.divider} />}
+                {index < meetingDetails.length - 1 && (
+                  <div className={styles.divider} />
+                )}
               </div>
             ))}
           </div>
         ) : !isRecording && waitingDevices.length > 0 ? (
-          <div className={styles.deviceList}>
-            <div className={styles.sectionTitle}>대기 중인 기기</div>
-            <div className={styles.deviceGrid}>
-              {waitingDevices.map((device) => (
-                <div key={device} className={styles.deviceChip}>
-                  {device}
+          <div className={styles.meetingList}>
+            {waitingDevices.map((device, index) => (
+              <div key={device} className={styles.meetingItem}>
+                <div className={styles.meetingHeader}>
+                  <div className={styles.meetingInfo}>
+                    <div className={styles.deviceName}>{device}</div>
+                  </div>
+                  <div className={styles.elapsedTime}>대기중</div>
                 </div>
-              ))}
-            </div>
+                {index < waitingDevices.length - 1 && (
+                  <div className={styles.divider} />
+                )}
+              </div>
+            ))}
           </div>
         ) : (
           <div className={styles.emptyState}>
-            {isRecording ? '진행 중인 녹음이 없습니다' : '대기 중인 기기가 없습니다'}
+            {isRecording
+              ? '진행 중인 녹음이 없습니다'
+              : '대기 중인 기기가 없습니다'}
           </div>
         )}
       </div>
