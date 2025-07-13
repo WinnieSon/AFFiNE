@@ -121,6 +121,12 @@ export class RecordingState extends Service {
           d => d !== info.device
         );
         console.log('Removed device from waiting:', info.device, 'New list:', merged.waitingDevices);
+      } else if (updateStatus === 'idle') {
+        // Remove device from waiting list when it goes idle (timeout or manual)
+        merged.waitingDevices = merged.waitingDevices.filter(
+          d => d !== info.device
+        );
+        console.log('Device timed out or went idle:', info.device, 'New list:', merged.waitingDevices);
       }
     }
 

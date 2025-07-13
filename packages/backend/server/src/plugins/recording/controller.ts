@@ -44,11 +44,18 @@ interface DeviceHealthCheck {
   timestamp: Date;
 }
 
+// Track waiting devices separately with their last update time
+interface WaitingDevice {
+  device: string;
+  lastUpdate: Date;
+}
+
 const meetingStartTimesByWorkspace = new Map<string, MeetingStartTime[]>();
 const deviceHealthChecksByWorkspace = new Map<
   string,
   Map<string, DeviceHealthCheck>
 >();
+const waitingDevicesByWorkspace = new Map<string, Map<string, WaitingDevice>>();
 
 // 10분 타임아웃
 const HEALTH_CHECK_TIMEOUT_MS = 10 * 60 * 1000;
@@ -234,6 +241,16 @@ export class RecordingController {
 
     // Automatically transition device to waiting status
     if (deviceName) {
+      // Track in waiting devices
+      if (!waitingDevicesByWorkspace.has(workspaceId)) {
+        waitingDevicesByWorkspace.set(workspaceId, new Map());
+      }
+      const waitingDevices = waitingDevicesByWorkspace.get(workspaceId)!;
+      waitingDevices.set(deviceName, {
+        device: deviceName,
+        lastUpdate: new Date(),
+      });
+      
       const waitingEvent: RecordingEvent = {
         type: 'recording_update',
         workspaceId,
@@ -301,6 +318,24 @@ export class RecordingController {
       }
     }
 
+    // Track waiting devices for cleanup
+    if (data.device && data.status === 'waiting') {
+      if (!waitingDevicesByWorkspace.has(workspaceId)) {
+        waitingDevicesByWorkspace.set(workspaceId, new Map());
+      }
+      const waitingDevices = waitingDevicesByWorkspace.get(workspaceId)!;
+      waitingDevices.set(data.device, {
+        device: data.device,
+        lastUpdate: now,
+      });
+    } else if (data.device && (data.status === 'recording' || data.status === 'processing')) {
+      // Remove from waiting devices when it starts recording/processing
+      const waitingDevices = waitingDevicesByWorkspace.get(workspaceId);
+      if (waitingDevices) {
+        waitingDevices.delete(data.device);
+      }
+    }
+
     // Pass through the original data as-is
     // The frontend will handle device status transitions intelligently
 
@@ -325,6 +360,10 @@ export class RecordingController {
   async resetRecording(@Param('workspaceId') workspaceId: string) {
     // 미팅 시작 시간 정보 초기화
     meetingStartTimesByWorkspace.delete(workspaceId);
+    // 대기중인 기기 정보 초기화
+    waitingDevicesByWorkspace.delete(workspaceId);
+    // 헬스체크 정보 초기화
+    deviceHealthChecksByWorkspace.delete(workspaceId);
 
     const event: RecordingEvent = {
       type: 'recording_reset',
@@ -468,6 +507,33 @@ export class RecordingController {
       });
 
       keysToDelete.forEach(key => workspaceHealthChecks.delete(key));
+    }
+
+    // Clean up stale waiting devices
+    if (waitingDevicesByWorkspace.has(workspaceId)) {
+      const waitingDevices = waitingDevicesByWorkspace.get(workspaceId)!;
+      const devicesToDelete: string[] = [];
+
+      waitingDevices.forEach((device, key) => {
+        const timeSinceLastUpdate = now - device.lastUpdate.getTime();
+        if (timeSinceLastUpdate > HEALTH_CHECK_TIMEOUT_MS) {
+          devicesToDelete.push(key);
+          
+          // Send a stop event to notify frontend
+          this.addEventForWorkspace(workspaceId, {
+            type: 'recording_update',
+            workspaceId,
+            data: {
+              device: device.device,
+              status: 'idle',
+              reason: 'timeout',
+            },
+            timestamp: new Date(),
+          });
+        }
+      });
+
+      devicesToDelete.forEach(key => waitingDevices.delete(key));
     }
 
     // 미팅 정보에서 타임아웃된 것 제거
