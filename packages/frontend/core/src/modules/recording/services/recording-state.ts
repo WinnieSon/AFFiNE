@@ -104,10 +104,13 @@ export class RecordingState extends Service {
     // Note: 'waiting' status comes from backend but isn't part of RecordingInfo.status
     if (info.device && (info as any).status) {
       const updateStatus = (info as any).status;
+      console.log('Device status update:', info.device, updateStatus, 'Current waiting:', merged.waitingDevices);
+      
       if (updateStatus === 'waiting') {
         // Add device to waiting list if not already there
         if (!merged.waitingDevices.includes(info.device)) {
           merged.waitingDevices = [...merged.waitingDevices, info.device];
+          console.log('Added device to waiting:', info.device, 'New list:', merged.waitingDevices);
         }
       } else if (
         updateStatus === 'recording' ||
@@ -117,6 +120,7 @@ export class RecordingState extends Service {
         merged.waitingDevices = merged.waitingDevices.filter(
           d => d !== info.device
         );
+        console.log('Removed device from waiting:', info.device, 'New list:', merged.waitingDevices);
       }
     }
 

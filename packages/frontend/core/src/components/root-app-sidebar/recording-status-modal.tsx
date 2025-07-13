@@ -98,7 +98,7 @@ export const RecordingStatusModal = ({
             )}
             <div className={styles.sectionTitle}>대기중인 기기</div>
             <div className={styles.meetingList}>
-              {waitingDevices.map((device, index) => (
+              {waitingDevices.map((device) => (
                 <div key={device} className={styles.meetingItem}>
                   <div className={styles.meetingHeader}>
                     <div className={styles.meetingInfo}>
@@ -106,9 +106,6 @@ export const RecordingStatusModal = ({
                     </div>
                     <div className={styles.elapsedTime}>대기중</div>
                   </div>
-                  {index < waitingDevices.length - 1 && (
-                    <div className={styles.divider} />
-                  )}
                 </div>
               ))}
             </div>
