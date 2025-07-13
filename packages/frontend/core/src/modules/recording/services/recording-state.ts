@@ -150,12 +150,18 @@ export class RecordingState extends Service {
       status: 'recording',
     };
 
+    // Remove device from waiting list if it's there
+    const updatedWaitingDevices = device 
+      ? current.waitingDevices.filter(d => d !== device)
+      : current.waitingDevices;
+
     this.setRecordingInfo({
       id: newMeetingId,
       status: 'recording',
       meetingCount: current.meetingCount + 1,
       activeMeetings: [...current.activeMeetings, newMeetingId],
       meetingDetails: [...current.meetingDetails, newMeeting],
+      waitingDevices: updatedWaitingDevices,
       startTime: current.startTime || new Date(),
     });
   }
@@ -199,11 +205,16 @@ export class RecordingState extends Service {
       };
       updatedDetails.push(newMeeting);
 
-      // activeMeetings에도 추가
+      // activeMeetings에도 추가 및 대기 목록에서 제거
       if (!current.activeMeetings.includes(meetingId)) {
+        const updatedWaitingDevices = device 
+          ? current.waitingDevices.filter(d => d !== device)
+          : current.waitingDevices;
+          
         this.setRecordingInfo({
           activeMeetings: [...current.activeMeetings, meetingId],
           meetingCount: current.meetingCount + 1,
+          waitingDevices: updatedWaitingDevices,
         });
       }
     }
