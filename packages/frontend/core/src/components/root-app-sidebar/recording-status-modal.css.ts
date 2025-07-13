@@ -129,6 +129,12 @@ export const divider = style({
   margin: '8px 0',
 });
 
+export const sectionDivider = style({
+  height: '1px',
+  background: cssVar('borderColor'),
+  margin: '16px 0',
+});
+
 export const deviceList = style({
   display: 'flex',
   flexDirection: 'column',

@@ -61,7 +61,7 @@ export const RecordingStatusModal = ({
       </div>
 
       <div className={styles.modalBody}>
-        {isRecording && meetingDetails.length > 0 ? (
+        {isRecording && meetingDetails.length > 0 && (
           <div className={styles.meetingList}>
             {meetingDetails.map((meeting, index) => (
               <div key={meeting.id} className={styles.meetingItem}>
@@ -89,27 +89,41 @@ export const RecordingStatusModal = ({
               </div>
             ))}
           </div>
-        ) : !isRecording && waitingDevices.length > 0 ? (
-          <div className={styles.meetingList}>
-            {waitingDevices.map((device, index) => (
-              <div key={device} className={styles.meetingItem}>
-                <div className={styles.meetingHeader}>
-                  <div className={styles.meetingInfo}>
-                    <div className={styles.deviceName}>{device}</div>
+        )}
+        
+        {waitingDevices.length > 0 && (
+          <>
+            {isRecording && meetingDetails.length > 0 && (
+              <div className={styles.sectionDivider} />
+            )}
+            <div className={styles.sectionTitle}>대기중인 기기</div>
+            <div className={styles.meetingList}>
+              {waitingDevices.map((device, index) => (
+                <div key={device} className={styles.meetingItem}>
+                  <div className={styles.meetingHeader}>
+                    <div className={styles.meetingInfo}>
+                      <div className={styles.deviceName}>{device}</div>
+                    </div>
+                    <div className={styles.elapsedTime}>대기중</div>
                   </div>
-                  <div className={styles.elapsedTime}>대기중</div>
+                  {index < waitingDevices.length - 1 && (
+                    <div className={styles.divider} />
+                  )}
                 </div>
-                {index < waitingDevices.length - 1 && (
-                  <div className={styles.divider} />
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
+              ))}
+            </div>
+          </>
+        )}
+        
+        {!isRecording && meetingDetails.length === 0 && waitingDevices.length === 0 && (
           <div className={styles.emptyState}>
-            {isRecording
-              ? '진행 중인 녹음이 없습니다'
-              : '대기 중인 기기가 없습니다'}
+            대기 중인 기기가 없습니다
+          </div>
+        )}
+        
+        {isRecording && meetingDetails.length === 0 && waitingDevices.length === 0 && (
+          <div className={styles.emptyState}>
+            진행 중인 녹음이 없습니다
           </div>
         )}
       </div>
