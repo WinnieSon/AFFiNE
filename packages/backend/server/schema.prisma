@@ -49,6 +49,7 @@ model User {
   comments                     Comment[]
   replies                      Reply[]
   commentAttachments           CommentAttachment[]            @relation("createdCommentAttachments")
+  userIdentifications          UserIdentification[]
 
   @@index([email])
   @@map("users")
@@ -128,9 +129,10 @@ model Workspace {
   docPermissions     WorkspaceDocUserRole[]
   blobs              Blob[]
   ignoredDocs        AiWorkspaceIgnoredDocs[]
-  embedFiles         AiWorkspaceFiles[]
-  comments           Comment[]
-  commentAttachments CommentAttachment[]
+  embedFiles          AiWorkspaceFiles[]
+  comments            Comment[]
+  commentAttachments  CommentAttachment[]
+  userIdentifications UserIdentification[]
 
   @@map("workspaces")
 }
@@ -930,4 +932,29 @@ model CommentAttachment {
 
   @@id([workspaceId, docId, key])
   @@map("comment_attachments")
+}
+
+model UserIdentification {
+  id          String   @id @default(uuid()) @db.VarChar
+  workspaceId String   @map("workspace_id") @db.VarChar
+  // User ID if identified, null if unidentified
+  userId      String?  @map("user_id") @db.VarChar
+  // Display information
+  nickname    String?  @db.VarChar
+  title       String?  @db.VarChar
+  email       String?  @db.VarChar
+  // Image data stored as base64 or binary
+  imageData   String   @map("image_data") @db.Text
+  imageType   String   @default("image/jpeg") @map("image_type") @db.VarChar
+  // Metadata
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy   String?  @map("created_by") @db.VarChar
+  
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([workspaceId])
+  @@index([userId])
+  @@map("user_identifications")
 }

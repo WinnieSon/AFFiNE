@@ -46,6 +46,7 @@ import { SyncModule } from './core/sync';
 import { UserModule } from './core/user';
 import { VersionModule } from './core/version';
 import { WorkspaceModule } from './core/workspaces';
+import { UserIdentificationModule } from './core/user-identification';
 import { Env } from './env';
 import { ModelsModule } from './models';
 import { CaptchaModule } from './plugins/captcha';
@@ -182,6 +183,7 @@ export function buildAppModule(env: Env) {
       StorageModule,
       ServerConfigResolverModule,
       WorkspaceModule,
+      UserIdentificationModule,
       LicenseModule,
       PaymentModule,
       CopilotModule,

@@ -493,6 +493,16 @@ input CreateCopilotPromptInput {
   name: String!
 }
 
+input CreateUserIdentificationInput {
+  email: String
+  imageData: String!
+  imageType: String
+  nickname: String
+  title: String
+  userId: String
+  workspaceId: String!
+}
+
 input CreateUserInput {
   email: String!
   name: String
@@ -1213,6 +1223,7 @@ type Mutation {
 
   """Create a new user"""
   createUser(input: CreateUserInput!): UserType!
+  createUserIdentification(input: CreateUserIdentificationInput!): UserIdentificationType!
 
   """Create a new workspace"""
   createWorkspace(init: Upload): WorkspaceType!
@@ -1228,6 +1239,7 @@ type Mutation {
 
   """Delete a user account"""
   deleteUser(id: String!): DeleteAccount!
+  deleteUserIdentification(id: ID!): Boolean!
   deleteWorkspace(id: String!): Boolean!
 
   """Reenable an banned user"""
@@ -1324,6 +1336,7 @@ type Mutation {
 
   """update user enabled feature"""
   updateUserFeatures(features: [FeatureType!]!, id: String!): [FeatureType!]!
+  updateUserIdentification(input: UpdateUserIdentificationInput!): UserIdentificationType!
 
   """Update workspace"""
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
@@ -1554,6 +1567,8 @@ type Query {
 
   """Get user by id"""
   userById(id: String!): UserType!
+  userIdentification(id: ID!): UserIdentificationType
+  userIdentifications(workspaceId: String!): [UserIdentificationType!]!
 
   """List registered users"""
   users(filter: ListUserInput!): [UserType!]!
@@ -1980,6 +1995,16 @@ input UpdateDocUserRoleInput {
   workspaceId: String!
 }
 
+input UpdateUserIdentificationInput {
+  email: String
+  id: String!
+  imageData: String
+  imageType: String
+  nickname: String
+  title: String
+  userId: String
+}
+
 input UpdateUserInput {
   """User name"""
   name: String
@@ -2013,6 +2038,21 @@ input UpdateWorkspaceInput {
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
+
+type UserIdentificationType {
+  createdAt: DateTime!
+  email: String
+  id: ID!
+  imageData: String!
+  imageType: String!
+  nickname: String
+  title: String
+  updatedAt: DateTime!
+  user: UserType
+  userId: String
+  workspace: WorkspaceType!
+  workspaceId: String!
+}
 
 type UserImportFailedType {
   email: String!

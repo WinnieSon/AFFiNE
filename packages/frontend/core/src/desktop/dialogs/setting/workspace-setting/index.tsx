@@ -23,6 +23,7 @@ import { WorkspaceSettingLicense } from './license';
 import { MembersPanel } from './members';
 import { WorkspaceSettingDetail } from './preference';
 import { WorkspaceSettingProperties } from './properties';
+import { UserIdentificationPanel } from './user-identification';
 
 export const WorkspaceSetting = ({
   activeTab,
@@ -45,6 +46,8 @@ export const WorkspaceSetting = ({
           onChangeSettingState={onChangeSettingState}
         />
       );
+    case 'workspace:user-identification':
+      return <UserIdentificationPanel />;
     case 'workspace:billing':
       return <WorkspaceSettingBilling />;
     case 'workspace:license':
@@ -93,6 +96,12 @@ export const useWorkspaceSettingList = (): SettingSidebarItem[] => {
         title: t['Members'](),
         icon: <CollaborationIcon />,
         testId: 'workspace-setting:members',
+      },
+      {
+        key: 'workspace:user-identification',
+        title: t['com.affine.settings.workspace.user-identification'](),
+        icon: <CollaborationIcon />,
+        testId: 'workspace-setting:user-identification',
       },
       // Integrations panel disabled
       // {

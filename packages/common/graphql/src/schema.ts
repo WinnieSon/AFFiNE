@@ -603,6 +603,16 @@ export interface CreateCopilotPromptInput {
   name: Scalars['String']['input'];
 }
 
+export interface CreateUserIdentificationInput {
+  email?: InputMaybe<Scalars['String']['input']>;
+  imageData: Scalars['String']['input'];
+  imageType?: InputMaybe<Scalars['String']['input']>;
+  nickname?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['String']['input']>;
+  workspaceId: Scalars['String']['input'];
+}
+
 export interface CreateUserInput {
   email: Scalars['String']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
@@ -1370,6 +1380,7 @@ export interface Mutation {
   createSelfhostWorkspaceCustomerPortal: Scalars['String']['output'];
   /** Create a new user */
   createUser: UserType;
+  createUserIdentification: UserIdentificationType;
   /** Create a new workspace */
   createWorkspace: WorkspaceType;
   deactivateLicense: Scalars['Boolean']['output'];
@@ -1381,6 +1392,7 @@ export interface Mutation {
   deleteReply: Scalars['Boolean']['output'];
   /** Delete a user account */
   deleteUser: DeleteAccount;
+  deleteUserIdentification: Scalars['Boolean']['output'];
   deleteWorkspace: Scalars['Boolean']['output'];
   /** Reenable an banned user */
   enableUser: UserType;
@@ -1460,6 +1472,7 @@ export interface Mutation {
   updateUser: UserType;
   /** update user enabled feature */
   updateUserFeatures: Array<FeatureType>;
+  updateUserIdentification: UserIdentificationType;
   /** Update workspace */
   updateWorkspace: WorkspaceType;
   /** Update ignored docs */
@@ -1588,6 +1601,10 @@ export interface MutationCreateUserArgs {
   input: CreateUserInput;
 }
 
+export interface MutationCreateUserIdentificationArgs {
+  input: CreateUserIdentificationInput;
+}
+
 export interface MutationCreateWorkspaceArgs {
   init?: InputMaybe<Scalars['Upload']['input']>;
 }
@@ -1613,6 +1630,10 @@ export interface MutationDeleteReplyArgs {
 
 export interface MutationDeleteUserArgs {
   id: Scalars['String']['input'];
+}
+
+export interface MutationDeleteUserIdentificationArgs {
+  id: Scalars['ID']['input'];
 }
 
 export interface MutationDeleteWorkspaceArgs {
@@ -1862,6 +1883,10 @@ export interface MutationUpdateUserFeaturesArgs {
   id: Scalars['String']['input'];
 }
 
+export interface MutationUpdateUserIdentificationArgs {
+  input: UpdateUserIdentificationInput;
+}
+
 export interface MutationUpdateWorkspaceArgs {
   input: UpdateWorkspaceInput;
 }
@@ -2105,6 +2130,8 @@ export interface Query {
   userByEmail: Maybe<UserType>;
   /** Get user by id */
   userById: UserType;
+  userIdentification: Maybe<UserIdentificationType>;
+  userIdentifications: Array<UserIdentificationType>;
   /** List registered users */
   users: Array<UserType>;
   /** Get users count */
@@ -2154,6 +2181,14 @@ export interface QueryUserByEmailArgs {
 
 export interface QueryUserByIdArgs {
   id: Scalars['String']['input'];
+}
+
+export interface QueryUserIdentificationArgs {
+  id: Scalars['ID']['input'];
+}
+
+export interface QueryUserIdentificationsArgs {
+  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryUsersArgs {
@@ -2588,6 +2623,16 @@ export interface UpdateDocUserRoleInput {
   workspaceId: Scalars['String']['input'];
 }
 
+export interface UpdateUserIdentificationInput {
+  email?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['String']['input'];
+  imageData?: InputMaybe<Scalars['String']['input']>;
+  imageType?: InputMaybe<Scalars['String']['input']>;
+  nickname?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['String']['input']>;
+}
+
 export interface UpdateUserInput {
   /** User name */
   name?: InputMaybe<Scalars['String']['input']>;
@@ -2612,6 +2657,22 @@ export interface UpdateWorkspaceInput {
   id: Scalars['ID']['input'];
   /** is Public workspace */
   public?: InputMaybe<Scalars['Boolean']['input']>;
+}
+
+export interface UserIdentificationType {
+  __typename?: 'UserIdentificationType';
+  createdAt: Scalars['DateTime']['output'];
+  email: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  imageData: Scalars['String']['output'];
+  imageType: Scalars['String']['output'];
+  nickname: Maybe<Scalars['String']['output']>;
+  title: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['DateTime']['output'];
+  user: Maybe<UserType>;
+  userId: Maybe<Scalars['String']['output']>;
+  workspace: WorkspaceType;
+  workspaceId: Scalars['String']['output'];
 }
 
 export interface UserImportFailedType {

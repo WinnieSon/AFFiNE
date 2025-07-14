@@ -45,7 +45,17 @@
       "Bash(yarn dev:*)",
       "Bash(yarn eslint:*)",
       "Bash(docker compose:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(mkdir:*)",
+      "Bash(yarn graphql:build:*)",
+      "Bash(yarn prisma migrate:*)",
+      "Bash(ls:*)",
+      "Bash(yarn graphql:gen:*)",
+      "Bash(yarn seed)",
+      "Bash(yarn data-migration:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(open:*)"
     ],
     "deny": []
   }
