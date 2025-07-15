@@ -1,11 +1,6 @@
-import {
-  Button,
-  Input,
-  Modal,
-  notify,
-} from '@affine/component';
+import { Button, Input, Modal, notify } from '@affine/component';
 import { useI18n } from '@affine/i18n';
-import { DeleteIcon, ImageIcon } from '@blocksuite/icons/rc';
+import { DeleteIcon, ImageIcon, PlusIcon } from '@blocksuite/icons/rc';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import * as styles from './edit-modal.css';
@@ -32,7 +27,9 @@ export const UserIdentificationEditModal = ({
   const t = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: existingData, loading: dataLoading } = useUserIdentification(isCreating ? null : identificationId);
+  const { data: existingData, loading: dataLoading } = useUserIdentification(
+    isCreating ? null : identificationId
+  );
   const { create, loading: createLoading } = useCreateUserIdentification();
   const { update, loading: updateLoading } = useUpdateUserIdentification();
   const { delete: deleteIdentification, loading: deleteLoading } =
@@ -42,7 +39,7 @@ export const UserIdentificationEditModal = ({
     nickname: '',
     title: '',
     email: '',
-    imageData: '',
+    imagesData: [] as string[],
   });
 
   useEffect(() => {
@@ -52,23 +49,37 @@ export const UserIdentificationEditModal = ({
         nickname: '',
         title: '',
         email: '',
-        imageData: '',
+        imagesData: [],
       });
     }
   }, [isCreating]);
 
   useEffect(() => {
     if (!isCreating && existingData?.userIdentification) {
-      const { nickname, title, email, imageData } =
+      const { nickname, title, email, imagesData, imageData } =
         existingData.userIdentification;
+
+      // Handle both new format (imagesData) and legacy format (imageData)
+      let images: string[] = [];
+      if (imagesData && imagesData.length > 0) {
+        images = imagesData;
+      } else if (imageData) {
+        // Convert legacy single image to array format
+        images = [imageData];
+      }
+
       setFormData({
         nickname: nickname || '',
         title: title || '',
         email: email || '',
-        imageData: imageData || '',
+        imagesData: images,
       });
     }
-  }, [existingData?.userIdentification?.id, isCreating, existingData?.userIdentification]); // Only depend on ID to prevent loops
+  }, [
+    existingData?.userIdentification?.id,
+    isCreating,
+    existingData?.userIdentification,
+  ]); // Only depend on ID to prevent loops
 
   const handleImageSelect = useCallback(() => {
     fileInputRef.current?.click();
@@ -76,59 +87,95 @@ export const UserIdentificationEditModal = ({
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const img = new Image();
-          img.onload = () => {
-            // Create canvas to resize image
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Set max dimensions
-            const maxWidth = 200;
-            const maxHeight = 200;
-            let width = img.width;
-            let height = img.height;
-            
-            // Calculate new dimensions
-            if (width > height) {
-              if (width > maxWidth) {
-                height = (height * maxWidth) / width;
-                width = maxWidth;
+      const files = Array.from(e.target.files || []);
+
+      if (files.length === 0) return;
+
+      // Check total images limit (current + new)
+      if (formData.imagesData.length + files.length > 10) {
+        notify.error({
+          message:
+            t['Maximum 10 images allowed']() || 'Maximum 10 images allowed',
+        });
+        return;
+      }
+
+      const processFiles = files.map(file => {
+        return new Promise<string>(resolve => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const img = new Image();
+            img.onload = () => {
+              // Create canvas to resize image
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+
+              // Set max dimensions
+              const maxWidth = 200;
+              const maxHeight = 200;
+              let width = img.width;
+              let height = img.height;
+
+              // Calculate new dimensions
+              if (width > height) {
+                if (width > maxWidth) {
+                  height = (height * maxWidth) / width;
+                  width = maxWidth;
+                }
+              } else {
+                if (height > maxHeight) {
+                  width = (width * maxHeight) / height;
+                  height = maxHeight;
+                }
               }
-            } else {
-              if (height > maxHeight) {
-                width = (width * maxHeight) / height;
-                height = maxHeight;
-              }
-            }
-            
-            canvas.width = width;
-            canvas.height = height;
-            
-            // Draw and compress image
-            ctx?.drawImage(img, 0, 0, width, height);
-            const compressedData = canvas.toDataURL('image/jpeg', 0.7);
-            
-            setFormData(prev => ({
-              ...prev,
-              imageData: compressedData,
-            }));
+
+              canvas.width = width;
+              canvas.height = height;
+
+              // Draw and compress image
+              ctx?.drawImage(img, 0, 0, width, height);
+              const compressedData = canvas.toDataURL('image/jpeg', 0.7);
+              resolve(compressedData);
+            };
+            img.src = reader.result as string;
           };
-          img.src = reader.result as string;
-        };
-        reader.readAsDataURL(file);
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(processFiles)
+        .then(newImages => {
+          setFormData(prev => ({
+            ...prev,
+            imagesData: [...prev.imagesData, ...newImages],
+          }));
+        })
+        .catch(error => {
+          console.error('Error processing images:', error);
+        });
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
     },
-    []
+    [formData.imagesData.length, t]
   );
 
+  const handleRemoveImage = useCallback((index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      imagesData: prev.imagesData.filter((_, i) => i !== index),
+    }));
+  }, []);
+
   const handleSave = useCallback(async () => {
-    if (!formData.imageData) {
+    if (formData.imagesData.length === 0) {
       notify.error({
-        title: t['com.affine.settings.workspace.user-identification.error.no-image'](),
+        title:
+          t[
+            'com.affine.settings.workspace.user-identification.error.no-image'
+          ](),
       });
       return;
     }
@@ -141,7 +188,10 @@ export const UserIdentificationEditModal = ({
           // userId will be set automatically by backend
         });
         notify.success({
-          title: t['com.affine.settings.workspace.user-identification.success.created'](),
+          title:
+            t[
+              'com.affine.settings.workspace.user-identification.success.created'
+            ](),
         });
       } else if (identificationId) {
         await update({
@@ -149,7 +199,10 @@ export const UserIdentificationEditModal = ({
           ...formData,
         });
         notify.success({
-          title: t['com.affine.settings.workspace.user-identification.success.updated'](),
+          title:
+            t[
+              'com.affine.settings.workspace.user-identification.success.updated'
+            ](),
         });
       }
       onClose();
@@ -180,7 +233,10 @@ export const UserIdentificationEditModal = ({
       try {
         await deleteIdentification(identificationId);
         notify.success({
-          title: t['com.affine.settings.workspace.user-identification.success.deleted'](),
+          title:
+            t[
+              'com.affine.settings.workspace.user-identification.success.deleted'
+            ](),
         });
         onClose();
       } catch (error) {
@@ -214,38 +270,50 @@ export const UserIdentificationEditModal = ({
       <div className={styles.modalHeader}>
         <h2 className={styles.modalTitle}>
           {isCreating
-            ? t['com.affine.settings.workspace.user-identification.modal.title.create']()
-            : t['com.affine.settings.workspace.user-identification.modal.title.edit']()}
+            ? t[
+                'com.affine.settings.workspace.user-identification.modal.title.create'
+              ]()
+            : t[
+                'com.affine.settings.workspace.user-identification.modal.title.edit'
+              ]()}
         </h2>
       </div>
 
       <div className={styles.modalBody}>
         <div className={styles.imageSection}>
-          <div className={styles.imagePreview}>
-            {formData.imageData ? (
-              <img
-                src={formData.imageData}
-                alt=""
-                className={styles.previewImage}
-              />
-            ) : (
-              <div className={styles.imagePlaceholder}>
-                <ImageIcon />
+          <div className={styles.imageGallery}>
+            {formData.imagesData.map((imageData, index) => (
+              <div key={index} className={styles.imagePreview}>
+                <img
+                  src={imageData}
+                  alt={`Image ${index + 1}`}
+                  className={styles.previewImage}
+                />
+                <button
+                  type="button"
+                  className={styles.removeImageButton}
+                  onClick={() => handleRemoveImage(index)}
+                  disabled={isLoading}
+                >
+                  <DeleteIcon />
+                </button>
+              </div>
+            ))}
+
+            {formData.imagesData.length < 10 && (
+              <div
+                className={styles.addImageButton}
+                onClick={handleImageSelect}
+              >
+                <PlusIcon />
               </div>
             )}
           </div>
-          <Button
-            size="small"
-            variant="secondary"
-            onClick={handleImageSelect}
-            disabled={isLoading}
-          >
-            {t['com.affine.settings.workspace.user-identification.modal.select-image']()}
-          </Button>
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            multiple
             onChange={handleFileChange}
             className={styles.fileInput}
           />
@@ -254,42 +322,54 @@ export const UserIdentificationEditModal = ({
         <div className={styles.formSection}>
           <div className={styles.formField}>
             <label className={styles.label}>
-              {t['com.affine.settings.workspace.user-identification.modal.nickname']()}
+              {t[
+                'com.affine.settings.workspace.user-identification.modal.nickname'
+              ]()}
             </label>
             <Input
               value={formData.nickname}
               onChange={value =>
                 setFormData(prev => ({ ...prev, nickname: value }))
               }
-              placeholder={t['com.affine.settings.workspace.user-identification.modal.nickname.placeholder']()}
+              placeholder={t[
+                'com.affine.settings.workspace.user-identification.modal.nickname.placeholder'
+              ]()}
               disabled={isLoading}
             />
           </div>
 
           <div className={styles.formField}>
             <label className={styles.label}>
-              {t['com.affine.settings.workspace.user-identification.modal.title']()}
+              {t[
+                'com.affine.settings.workspace.user-identification.modal.title'
+              ]()}
             </label>
             <Input
               value={formData.title}
               onChange={value =>
                 setFormData(prev => ({ ...prev, title: value }))
               }
-              placeholder={t['com.affine.settings.workspace.user-identification.modal.title.placeholder']()}
+              placeholder={t[
+                'com.affine.settings.workspace.user-identification.modal.title.placeholder'
+              ]()}
               disabled={isLoading}
             />
           </div>
 
           <div className={styles.formField}>
             <label className={styles.label}>
-              {t['com.affine.settings.workspace.user-identification.modal.email']()}
+              {t[
+                'com.affine.settings.workspace.user-identification.modal.email'
+              ]()}
             </label>
             <Input
               value={formData.email}
               onChange={value =>
                 setFormData(prev => ({ ...prev, email: value }))
               }
-              placeholder={t['com.affine.settings.workspace.user-identification.modal.email.placeholder']()}
+              placeholder={t[
+                'com.affine.settings.workspace.user-identification.modal.email.placeholder'
+              ]()}
               type="email"
               disabled={isLoading}
             />
@@ -302,7 +382,9 @@ export const UserIdentificationEditModal = ({
           <Button
             variant="error"
             prefix={<DeleteIcon />}
-            onClick={handleDelete}
+            onClick={() => {
+              handleDelete().catch(console.error);
+            }}
             disabled={isLoading}
           >
             {t['Delete']()}
@@ -314,8 +396,10 @@ export const UserIdentificationEditModal = ({
           </Button>
           <Button
             variant="primary"
-            onClick={() => void handleSave()}
-            disabled={isLoading || !formData.imageData}
+            onClick={() => {
+              handleSave().catch(console.error);
+            }}
+            disabled={isLoading || formData.imagesData.length === 0}
           >
             {isCreating ? t['Create']() : t['Save']()}
           </Button>

@@ -10,8 +10,8 @@ import {
 } from '@nestjs/graphql';
 import { PrismaClient } from '@prisma/client';
 
-import { CurrentUser } from '../auth/session';
 import type { CurrentUser as CurrentUserType } from '../auth/session';
+import { CurrentUser } from '../auth/session';
 import { AccessController } from '../permission';
 import { UserType } from '../user/types';
 import { WorkspaceType } from '../workspaces/types';
@@ -34,16 +34,16 @@ export class UserIdentificationResolver {
     @CurrentUser() user: CurrentUserType,
     @Args('workspaceId') workspaceId: string
   ): Promise<UserIdentificationType[]> {
-    await this.access.user(user.id).workspace(workspaceId).assert('Workspace.Read');
+    await this.access
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.Read');
 
     return this.prisma.userIdentification.findMany({
       where: {
         workspaceId,
       },
-      orderBy: [
-        { userId: 'asc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ userId: 'asc' }, { createdAt: 'desc' }],
     });
   }
 
@@ -60,7 +60,10 @@ export class UserIdentificationResolver {
       return null;
     }
 
-    await this.access.user(user.id).workspace(identification.workspaceId).assert('Workspace.Read');
+    await this.access
+      .user(user.id)
+      .workspace(identification.workspaceId)
+      .assert('Workspace.Read');
 
     return identification;
   }
@@ -70,14 +73,20 @@ export class UserIdentificationResolver {
     @CurrentUser() user: CurrentUserType,
     @Args('input') input: CreateUserIdentificationInput
   ): Promise<UserIdentificationType> {
-    await this.access.user(user.id).workspace(input.workspaceId).assert('Workspace.Settings.Update');
+    await this.access
+      .user(user.id)
+      .workspace(input.workspaceId)
+      .assert('Workspace.Settings.Update');
 
     return this.prisma.userIdentification.create({
       data: {
-        ...input,
-        userId: input.userId || user.id, // Default to current user if not specified
+        workspaceId: input.workspaceId,
+        userId: input.userId || user.id,
+        nickname: input.nickname,
+        title: input.title,
+        email: input.email,
+        imagesData: input.imagesData || [],
         createdBy: user.id,
-        imageType: input.imageType || 'image/jpeg',
       },
     });
   }
@@ -95,7 +104,10 @@ export class UserIdentificationResolver {
       throw new Error('User identification not found');
     }
 
-    await this.access.user(user.id).workspace(identification.workspaceId).assert('Workspace.Settings.Update');
+    await this.access
+      .user(user.id)
+      .workspace(identification.workspaceId)
+      .assert('Workspace.Settings.Update');
 
     const { id, ...updateData } = input;
 
@@ -118,7 +130,10 @@ export class UserIdentificationResolver {
       throw new Error('User identification not found');
     }
 
-    await this.access.user(user.id).workspace(identification.workspaceId).assert('Workspace.Settings.Update');
+    await this.access
+      .user(user.id)
+      .workspace(identification.workspaceId)
+      .assert('Workspace.Settings.Update');
 
     await this.prisma.userIdentification.delete({
       where: { id },
@@ -147,5 +162,27 @@ export class UserIdentificationResolver {
     return this.prisma.user.findUnique({
       where: { id: identification.userId },
     });
+  }
+
+  @ResolveField(() => [String])
+  async imagesData(@Parent() identification: any): Promise<string[]> {
+    // Handle JSON data from database
+    if (identification.imagesData) {
+      return Array.isArray(identification.imagesData)
+        ? identification.imagesData
+        : JSON.parse(identification.imagesData);
+    }
+
+    // Fallback to legacy single image if available
+    if (identification.imageData) {
+      return [
+        {
+          data: identification.imageData,
+          type: identification.imageType || 'image/jpeg',
+        },
+      ].map(img => JSON.stringify(img));
+    }
+
+    return [];
   }
 }

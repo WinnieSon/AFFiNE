@@ -605,8 +605,7 @@ export interface CreateCopilotPromptInput {
 
 export interface CreateUserIdentificationInput {
   email?: InputMaybe<Scalars['String']['input']>;
-  imageData: Scalars['String']['input'];
-  imageType?: InputMaybe<Scalars['String']['input']>;
+  imagesData: Array<Scalars['String']['input']>;
   nickname?: InputMaybe<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
   userId?: InputMaybe<Scalars['String']['input']>;
@@ -2626,8 +2625,7 @@ export interface UpdateDocUserRoleInput {
 export interface UpdateUserIdentificationInput {
   email?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['String']['input'];
-  imageData?: InputMaybe<Scalars['String']['input']>;
-  imageType?: InputMaybe<Scalars['String']['input']>;
+  imagesData?: InputMaybe<Array<Scalars['String']['input']>>;
   nickname?: InputMaybe<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
   userId?: InputMaybe<Scalars['String']['input']>;
@@ -2664,8 +2662,9 @@ export interface UserIdentificationType {
   createdAt: Scalars['DateTime']['output'];
   email: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  imageData: Scalars['String']['output'];
-  imageType: Scalars['String']['output'];
+  imageData: Maybe<Scalars['String']['output']>;
+  imageType: Maybe<Scalars['String']['output']>;
+  imagesData: Array<Scalars['String']['output']>;
   nickname: Maybe<Scalars['String']['output']>;
   title: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
@@ -5046,7 +5045,7 @@ export type GetMembersByWorkspaceIdQuery = {
       name: string | null;
       email: string | null;
       avatarUrl: string | null;
-      permission: Permission;
+      role: Permission;
       inviteId: string;
       emailVerified: boolean | null;
       status: WorkspaceMemberStatus;

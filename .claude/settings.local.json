@@ -55,7 +55,11 @@
       "Bash(yarn data-migration:*)",
       "Bash(pkill:*)",
       "Bash(true)",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(yarn prisma:*)",
+      "Bash(yarn graphql:codegen:*)",
+      "Bash(yarn run:*)",
+      "Bash(yarn --help)"
     ],
     "deny": []
   }

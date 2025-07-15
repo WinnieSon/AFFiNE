@@ -234,8 +234,8 @@ export const MemberOptions = ({
           (isOwner && member.status === WorkspaceMemberStatus.Accepted) ||
           (isAdmin &&
             member.status === WorkspaceMemberStatus.Accepted &&
-            member.permission !== Permission.Owner &&
-            member.permission !== Permission.Admin),
+            member.role !== Permission.Owner &&
+            member.role !== Permission.Admin),
       },
       {
         label: t['com.affine.payment.member.team.change.collaborator'](),
@@ -243,7 +243,7 @@ export const MemberOptions = ({
         show:
           isOwner &&
           member.status === WorkspaceMemberStatus.Accepted &&
-          member.permission === Permission.Admin,
+          member.role === Permission.Admin,
       },
       {
         label: t['com.affine.payment.member.team.change.admin'](),
@@ -251,8 +251,8 @@ export const MemberOptions = ({
         show:
           isTeam &&
           isOwner &&
-          member.permission !== Permission.Owner &&
-          member.permission !== Permission.Admin &&
+          member.role !== Permission.Owner &&
+          member.role !== Permission.Admin &&
           member.status === WorkspaceMemberStatus.Accepted,
       },
       {
@@ -273,7 +273,7 @@ export const MemberOptions = ({
     isAdmin,
     isOwner,
     isTeam,
-    member.permission,
+    member.role,
     member.status,
     t,
   ]);

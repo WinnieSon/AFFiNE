@@ -112,15 +112,12 @@ const getShouldShow = ({
   isOwner: boolean;
   isAdmin: boolean;
 }) => {
-  if (
-    member.id === currentAccountId ||
-    member.permission === Permission.Owner
-  ) {
+  if (member.id === currentAccountId || member.role === Permission.Owner) {
     return false;
   } else if (isOwner) {
     return true;
   } else if (isAdmin) {
-    return member.permission !== Permission.Admin;
+    return member.role !== Permission.Admin;
   }
   return false;
 };
@@ -265,7 +262,7 @@ const getMemberStatus = (member: Member): I18nString => {
     case WorkspaceMemberStatus.AllocatingSeat:
       return 'Allocating Seat';
     case WorkspaceMemberStatus.Accepted:
-      switch (member.permission) {
+      switch (member.role) {
         case Permission.Owner:
           return 'Workspace Owner';
         case Permission.Admin:

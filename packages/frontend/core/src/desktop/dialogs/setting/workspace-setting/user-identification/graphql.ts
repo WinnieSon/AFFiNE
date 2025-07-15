@@ -9,6 +9,7 @@ export const userIdentificationsQuery = {
       nickname
       title
       email
+      imagesData
       imageData
       imageType
       createdAt
@@ -28,6 +29,7 @@ export const userIdentificationQuery = {
       nickname
       title
       email
+      imagesData
       imageData
       imageType
       createdAt
@@ -47,8 +49,7 @@ export const createUserIdentificationMutation = {
       nickname
       title
       email
-      imageData
-      imageType
+      imagesData
       createdAt
       updatedAt
     }
@@ -66,8 +67,7 @@ export const updateUserIdentificationMutation = {
       nickname
       title
       email
-      imageData
-      imageType
+      imagesData
       createdAt
       updatedAt
     }

@@ -1430,14 +1430,13 @@ export const getMembersByWorkspaceIdQuery = {
       name
       email
       avatarUrl
-      permission
+      role
       inviteId
       emailVerified
       status
     }
   }
 }`,
-  deprecations: ["'permission' is deprecated: Use role instead"],
 };
 
 export const oauthProvidersQuery = {

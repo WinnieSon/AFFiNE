@@ -495,8 +495,7 @@ input CreateCopilotPromptInput {
 
 input CreateUserIdentificationInput {
   email: String
-  imageData: String!
-  imageType: String
+  imagesData: [String!]!
   nickname: String
   title: String
   userId: String
@@ -1998,8 +1997,7 @@ input UpdateDocUserRoleInput {
 input UpdateUserIdentificationInput {
   email: String
   id: String!
-  imageData: String
-  imageType: String
+  imagesData: [String!]
   nickname: String
   title: String
   userId: String
@@ -2043,8 +2041,9 @@ type UserIdentificationType {
   createdAt: DateTime!
   email: String
   id: ID!
-  imageData: String!
-  imageType: String!
+  imageData: String
+  imageType: String
+  imagesData: [String!]!
   nickname: String
   title: String
   updatedAt: DateTime!

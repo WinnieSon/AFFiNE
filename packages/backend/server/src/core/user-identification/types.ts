@@ -1,4 +1,5 @@
 import { Field, ID, InputType, ObjectType } from '@nestjs/graphql';
+
 import { UserType } from '../user/types';
 import { WorkspaceType } from '../workspaces/types';
 
@@ -22,11 +23,15 @@ export class UserIdentificationType {
   @Field(() => String, { nullable: true })
   email?: string | null;
 
-  @Field()
-  imageData!: string;
+  @Field(() => [String])
+  imagesData!: string[];
 
-  @Field()
-  imageType!: string;
+  // Legacy fields for backward compatibility
+  @Field(() => String, { nullable: true })
+  imageData?: string | null;
+
+  @Field(() => String, { nullable: true })
+  imageType?: string | null;
 
   @Field()
   createdAt!: Date;
@@ -58,11 +63,8 @@ export class CreateUserIdentificationInput {
   @Field(() => String, { nullable: true })
   email?: string | null;
 
-  @Field()
-  imageData!: string;
-
-  @Field(() => String, { nullable: true })
-  imageType?: string;
+  @Field(() => [String])
+  imagesData!: string[];
 }
 
 @InputType()
@@ -82,9 +84,6 @@ export class UpdateUserIdentificationInput {
   @Field(() => String, { nullable: true })
   email?: string | null;
 
-  @Field(() => String, { nullable: true })
-  imageData?: string;
-
-  @Field(() => String, { nullable: true })
-  imageType?: string;
+  @Field(() => [String], { nullable: true })
+  imagesData?: string[];
 }

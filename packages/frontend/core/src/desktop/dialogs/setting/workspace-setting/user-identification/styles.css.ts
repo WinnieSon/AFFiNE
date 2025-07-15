@@ -78,11 +78,22 @@ export const editIcon = style({
   position: 'absolute',
   bottom: -2,
   right: -2,
+  width: 20,
+  height: 20,
   background: cssVar('backgroundPrimaryColor'),
   border: `2px solid ${cssVar('backgroundPrimaryColor')}`,
   borderRadius: '50%',
   opacity: 0,
   transition: 'opacity 0.2s',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: cssVar('iconColor'),
+
+  '& svg': {
+    width: 12,
+    height: 12,
+  },
 
   selectors: {
     [`${userButton}:hover &`]: {

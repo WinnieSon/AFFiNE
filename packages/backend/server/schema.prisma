@@ -943,9 +943,11 @@ model UserIdentification {
   nickname    String?  @db.VarChar
   title       String?  @db.VarChar
   email       String?  @db.VarChar
-  // Image data stored as base64 or binary
-  imageData   String   @map("image_data") @db.Text
-  imageType   String   @default("image/jpeg") @map("image_type") @db.VarChar
+  // Image data stored as base64 or binary (legacy single image)
+  imageData   String?  @map("image_data") @db.Text
+  imageType   String?  @default("image/jpeg") @map("image_type") @db.VarChar
+  // Images data stored as JSON array of base64 strings (max 10 images)
+  imagesData  Json?    @default("[]") @map("images_data") @db.Json
   // Metadata
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)

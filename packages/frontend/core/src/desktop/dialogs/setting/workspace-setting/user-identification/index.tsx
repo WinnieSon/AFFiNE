@@ -16,9 +16,7 @@ export const UserIdentificationPanel = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const { data, loading, error, mutate } = useUserIdentifications(
-    workspace.id
-  );
+  const { data, loading, error, mutate } = useUserIdentifications(workspace.id);
 
   const handleEdit = useCallback((id: string) => {
     setEditingId(id);
@@ -32,7 +30,7 @@ export const UserIdentificationPanel = () => {
     setEditingId(null);
     setIsCreating(false);
     // Revalidate the data to show new items
-    void mutate();
+    mutate().catch(console.error);
   }, [mutate]);
 
   if (error) {
@@ -50,23 +48,29 @@ export const UserIdentificationPanel = () => {
     <div className={styles.container}>
       <SettingRow
         name={t['com.affine.settings.workspace.user-identification.title']()}
-        desc={t['com.affine.settings.workspace.user-identification.description']()}
+        desc={t[
+          'com.affine.settings.workspace.user-identification.description'
+        ]()}
       />
 
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h3 className={styles.sectionTitle}>
-            {t['com.affine.settings.workspace.user-identification.registered']()}
+            {t[
+              'com.affine.settings.workspace.user-identification.registered'
+            ]()}
           </h3>
           <IconButton
             size="small"
             icon={<PlusIcon />}
             onClick={handleCreate}
-            style={{ 
-              width: 32, 
-              height: 32
+            style={{
+              width: 32,
+              height: 32,
             }}
-            tooltip={t['com.affine.settings.workspace.user-identification.add']()}
+            tooltip={t[
+              'com.affine.settings.workspace.user-identification.add'
+            ]()}
           />
         </div>
 
@@ -80,22 +84,20 @@ export const UserIdentificationPanel = () => {
           ) : registeredUsers.length > 0 ? (
             registeredUsers.map(user => (
               <div key={user.id} className={styles.userItem}>
-                <button
+                <div
                   className={styles.userButton}
                   onClick={() => handleEdit(user.id)}
                   title={user.nickname || user.email || ''}
                 >
                   <img
-                    src={user.imageData}
+                    src={user.imagesData?.[0] || user.imageData || ''}
                     alt={user.nickname || ''}
                     className={styles.userImage}
                   />
-                  <IconButton
-                    className={styles.editIcon}
-                    size="small"
-                    icon={<EditIcon />}
-                  />
-                </button>
+                  <div className={styles.editIcon}>
+                    <EditIcon />
+                  </div>
+                </div>
                 <span className={styles.userName}>
                   {user.nickname || user.email || t['Unnamed']()}
                 </span>
@@ -103,7 +105,9 @@ export const UserIdentificationPanel = () => {
             ))
           ) : (
             <p className={styles.emptyText}>
-              {t['com.affine.settings.workspace.user-identification.no-registered']()}
+              {t[
+                'com.affine.settings.workspace.user-identification.no-registered'
+              ]()}
             </p>
           )}
         </div>
@@ -111,7 +115,9 @@ export const UserIdentificationPanel = () => {
 
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>
-          {t['com.affine.settings.workspace.user-identification.unidentified']()}
+          {t[
+            'com.affine.settings.workspace.user-identification.unidentified'
+          ]()}
         </h3>
 
         <div className={styles.userGrid}>
@@ -123,29 +129,31 @@ export const UserIdentificationPanel = () => {
           ) : unidentifiedUsers.length > 0 ? (
             unidentifiedUsers.map(user => (
               <div key={user.id} className={styles.userItem}>
-                <button
+                <div
                   className={styles.userButton}
                   onClick={() => handleEdit(user.id)}
                 >
                   <img
-                    src={user.imageData}
+                    src={user.imagesData?.[0] || user.imageData || ''}
                     alt=""
                     className={styles.userImage}
                   />
-                  <IconButton
-                    className={styles.editIcon}
-                    size="small"
-                    icon={<EditIcon />}
-                  />
-                </button>
+                  <div className={styles.editIcon}>
+                    <EditIcon />
+                  </div>
+                </div>
                 <span className={styles.userName}>
-                  {t['com.affine.settings.workspace.user-identification.unknown']()}
+                  {t[
+                    'com.affine.settings.workspace.user-identification.unknown'
+                  ]()}
                 </span>
               </div>
             ))
           ) : (
             <p className={styles.emptyText}>
-              {t['com.affine.settings.workspace.user-identification.no-unidentified']()}
+              {t[
+                'com.affine.settings.workspace.user-identification.no-unidentified'
+              ]()}
             </p>
           )}
         </div>
