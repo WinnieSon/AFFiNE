@@ -20,6 +20,7 @@ import {
   WorkspaceResolver,
 } from './resolvers';
 import { WorkspaceService } from './service';
+import { TagController } from './tag.controller';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { WorkspaceService } from './service';
     NotificationModule,
     MailModule,
   ],
-  controllers: [WorkspacesController],
+  controllers: [WorkspacesController, TagController],
   providers: [
     WorkspaceResolver,
     WorkspaceMemberResolver,

@@ -143,29 +143,20 @@ export class DocsQuickSearchSession
       }
       return out.pipe(
         tap((items: QuickSearchItem<'docs', DocsPayload>[]) => {
-          this.items$.next(
-            this.isSupportServerIndexer() && !this.searchLocally
-              ? [...items, this.searchLocallyItem]
-              : items
-          );
+          // Disabled Search Locally feature - always show only search results
+          this.items$.next(items);
           this.isQueryLoading$.next(false);
         }),
         onStart(() => {
           this.error$.next(null);
-          this.items$.next(
-            this.isSupportServerIndexer() && !this.searchLocally
-              ? [this.searchLocallyItem]
-              : []
-          );
+          // Disabled Search Locally feature - don't show the search locally option
+          this.items$.next([]);
           this.isQueryLoading$.next(true);
         }),
         catchError(err => {
           this.error$.next(err instanceof Error ? err.message : err);
-          this.items$.next(
-            this.isSupportServerIndexer() && !this.searchLocally
-              ? [this.searchLocallyItem]
-              : []
-          );
+          // Disabled Search Locally feature - don't show the search locally option on error
+          this.items$.next([]);
           this.isQueryLoading$.next(false);
           return EMPTY;
         }),

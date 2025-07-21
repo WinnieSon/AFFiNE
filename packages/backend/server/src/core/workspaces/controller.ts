@@ -12,6 +12,7 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { nanoid } from 'nanoid';
 import * as Y from 'yjs';
 
 import {
@@ -32,6 +33,7 @@ import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
 import { CreateDocDto, CreateMeetingDocDto, UpdateDocDto } from './dto';
 import { createMeetingNoteDocument } from './meeting-note-generator';
+import type { Tag } from './tag.controller';
 
 @Controller('/api/workspaces')
 export class WorkspacesController {
@@ -368,12 +370,36 @@ export class WorkspacesController {
     const docId = randomUUID();
 
     try {
-      // For now, we'll pass tag names directly to the document
-      // The UI will handle creating tags in the workspace
-      let tagNames: string[] = [];
+      // Handle tags - check existing and create new ones
+      let tagIds: string[] = [];
       if (body.tags && body.tags.length > 0) {
-        tagNames = body.tags;
-        this.logger.log(`Will add tags to document: ${tagNames.join(', ')}`);
+        // Get existing tags from workspace
+        const existingTags = await this.getWorkspaceTags(workspaceId);
+
+        for (const tagName of body.tags) {
+          // Check if tag already exists
+          let existingTag = existingTags.find(t => t.value === tagName);
+
+          if (!existingTag) {
+            // Create new tag
+            const newTag: Tag = {
+              id: nanoid(),
+              value: tagName,
+              color: this.getRandomTagColor(),
+              createDate: Date.now(),
+              updateDate: Date.now(),
+            };
+
+            await this.addTagToWorkspace(workspaceId, newTag, user.id);
+            this.logger.log(`Created new tag: ${tagName} (${newTag.id})`);
+            tagIds.push(newTag.id);
+          } else {
+            this.logger.log(
+              `Using existing tag: ${tagName} (${existingTag.id})`
+            );
+            tagIds.push(existingTag.id);
+          }
+        }
       }
 
       // Format document title with date/time
@@ -423,10 +449,10 @@ export class WorkspacesController {
           docId,
           formattedTitle,
           user.id,
-          tagNames.length > 0 ? tagNames : undefined
+          tagIds.length > 0 ? tagIds : undefined
         );
         this.logger.log(
-          `Added document to workspace meta with ${tagNames.length} tags`
+          `Added document to workspace meta with ${tagIds.length} tags`
         );
       } catch (error) {
         this.logger.warn(
@@ -521,7 +547,7 @@ export class WorkspacesController {
     docId: string,
     title: string,
     userId: string,
-    tagNames?: string[]
+    tagIds?: string[]
   ): Promise<void> {
     try {
       // Get the workspace's root document
@@ -565,16 +591,14 @@ export class WorkspacesController {
         docMeta.set('createDate', timestamp);
         docMeta.set('updatedDate', timestamp);
 
-        // Add tag names if provided
-        // Note: In AFFiNE, tags can be stored as names in the document
-        // The UI will handle creating/linking them in the workspace
+        // Add tag IDs if provided
         const tagsArray = new Y.Array();
-        if (tagNames && tagNames.length > 0) {
+        if (tagIds && tagIds.length > 0) {
           this.logger.log(
-            `Adding ${tagNames.length} tags to document metadata: ${JSON.stringify(tagNames)}`
+            `Adding ${tagIds.length} tag IDs to document metadata: ${JSON.stringify(tagIds)}`
           );
-          tagNames.forEach(tagName => {
-            tagsArray.push([tagName]); // Push tag name directly
+          tagIds.forEach(tagId => {
+            tagsArray.push([tagId]); // Push tag ID
           });
         }
         docMeta.set('tags', tagsArray);
@@ -605,5 +629,104 @@ export class WorkspacesController {
       );
       // Don't throw - this is not critical for document creation
     }
+  }
+
+  /**
+   * Get random tag color
+   */
+  private getRandomTagColor(): string {
+    const colors = [
+      'var(--affine-palette-line-red)',
+      'var(--affine-palette-line-orange)',
+      'var(--affine-palette-line-yellow)',
+      'var(--affine-palette-line-green)',
+      'var(--affine-palette-line-blue)',
+      'var(--affine-palette-line-purple)',
+      'var(--affine-palette-line-magenta)',
+      'var(--affine-palette-line-grey)',
+      'var(--affine-palette-line-tangerine)',
+      'var(--affine-palette-line-teal)',
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  /**
+   * Get tags from workspace metadata
+   */
+  private async getWorkspaceTags(workspaceId: string): Promise<Tag[]> {
+    const rootDoc = await this.workspace.getDoc(workspaceId, workspaceId);
+    if (!rootDoc) {
+      this.logger.warn(`Root document not found for workspace ${workspaceId}`);
+      return [];
+    }
+
+    const ydoc = new Y.Doc();
+    Y.applyUpdate(ydoc, rootDoc.bin);
+
+    const meta = ydoc.getMap('meta');
+    const properties = meta.get('properties') as Y.Map<any>;
+
+    if (!properties) {
+      return [];
+    }
+
+    const tagsInfo = properties.get('tags') as Y.Map<any>;
+    if (!tagsInfo) {
+      return [];
+    }
+
+    const options = tagsInfo.get('options') as Y.Array<any>;
+    if (!options) {
+      return [];
+    }
+
+    return options.toJSON() as Tag[];
+  }
+
+  /**
+   * Add a new tag to workspace
+   */
+  private async addTagToWorkspace(
+    workspaceId: string,
+    tag: Tag,
+    userId: string
+  ): Promise<void> {
+    const rootDoc = await this.workspace.getDoc(workspaceId, workspaceId);
+    if (!rootDoc) {
+      throw new Error(`Root document not found for workspace ${workspaceId}`);
+    }
+
+    const ydoc = new Y.Doc();
+    Y.applyUpdate(ydoc, rootDoc.bin);
+
+    const meta = ydoc.getMap('meta');
+    let properties = meta.get('properties') as Y.Map<any>;
+
+    if (!properties) {
+      properties = new Y.Map();
+      meta.set('properties', properties);
+    }
+
+    let tagsInfo = properties.get('tags') as Y.Map<any>;
+    if (!tagsInfo) {
+      tagsInfo = new Y.Map();
+      properties.set('tags', tagsInfo);
+    }
+
+    let options = tagsInfo.get('options') as Y.Array<any>;
+    if (!options) {
+      options = new Y.Array();
+      tagsInfo.set('options', options);
+    }
+
+    options.push([tag]);
+
+    const update = Y.encodeStateAsUpdate(ydoc);
+    await this.workspace.pushDocUpdates(
+      workspaceId,
+      workspaceId,
+      [update],
+      userId
+    );
   }
 }
