@@ -101,6 +101,7 @@ interface ShapeNodeOptions {
   width: number;
   height: number;
   text: string;
+  fontSize?: number;
   fillColor: string;
   strokeColor: string;
   strokeWidth?: number;
@@ -131,6 +132,9 @@ function createShapeNode(options: ShapeNodeOptions): Y.Map<unknown> {
   node.set('strokeStyle', options.strokeStyle || 'solid');
   node.set('index', options.index);
   node.set('roughness', options.roughness ?? 1.4);
+  node.set('fontSize', options.fontSize ?? 20);
+  node.set('margin', 5);
+  node.set('color', '--affine-palette-line-black'); // Set text color to black for light theme
 
   if (options.textAlign) {
     node.set('textAlign', options.textAlign);
@@ -155,6 +159,8 @@ interface ConnectorOptions {
   rearEndpointStyle?: string;
   index: string;
   roughness?: number;
+  sourcePosition?: [number, number]; // [0.5, 0.5] means center, [1, 0.5] means right center
+  targetPosition?: [number, number]; // [0, 0.5] means left center
 }
 
 // Create a connector with common properties
@@ -171,8 +177,18 @@ function createConnector(options: ConnectorOptions): Y.Map<unknown> {
   connector.set('roughness', options.roughness ?? 1.4);
   connector.set('frontEndpointStyle', options.frontEndpointStyle || 'none');
   connector.set('rearEndpointStyle', options.rearEndpointStyle || 'none');
-  connector.set('source', { id: options.sourceId });
-  connector.set('target', { id: options.targetId });
+
+  // Set source with position (default to right center [1, 0.5])
+  connector.set('source', {
+    id: options.sourceId,
+    position: options.sourcePosition ?? [1, 0.5], // Right center
+  });
+
+  // Set target with position (default to left center [0, 0.5])
+  connector.set('target', {
+    id: options.targetId,
+    position: options.targetPosition ?? [0, 0.5], // Left center
+  });
 
   return connector;
 }
@@ -230,6 +246,10 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
   surfaceBlock.set('sys:version', 5);
   surfaceBlock.set('sys:children', new Y.Array());
 
+  // Set light theme background
+  surfaceBlock.set('prop:background', '--affine-palette-transparent');
+  surfaceBlock.set('prop:grid', 'grid');
+
   // Create Boxed elements structure with mindmap shapes
   const elementsYMap = new Y.Map();
 
@@ -252,7 +272,6 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
   elementsYMap.set(centralNodeId, centralNode);
 
   // Create branch nodes
-  let nodeIndex = 0;
   const branchNodeIds = [];
 
   // Calculate the height needed for each branch section
@@ -308,6 +327,34 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
     branchHeights.push(actionsHeight);
   }
 
+  // Conversation branch height
+  if (data.conversation && data.conversation.length > 0) {
+    // Filter conversations with text length >= 5 characters (excluding spaces, '.', '?')
+    const filteredConversations = data.conversation.filter(conv => {
+      if (!conv.text) return false;
+      const cleanedText = conv.text.replace(/[\s.?]/g, ''); // Remove spaces, '.', '?'
+      return cleanedText.length >= 5;
+    });
+
+    if (filteredConversations.length > 0) {
+      // Group conversations by speaker to calculate height
+      const speakerGroups = new Map();
+      filteredConversations.forEach(conv => {
+        if (!speakerGroups.has(conv.speaker)) {
+          speakerGroups.set(conv.speaker, []);
+        }
+        speakerGroups.get(conv.speaker).push(conv);
+      });
+
+      const conversationSpacing = 80;
+      const conversationHeight = Math.max(
+        100,
+        speakerGroups.size * conversationSpacing
+      );
+      branchHeights.push(conversationHeight);
+    }
+  }
+
   // Calculate branch positions to avoid overlap
   const centralY = 400;
   const branchPositions: number[] = [];
@@ -320,7 +367,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       (branchHeights.length - 1) * minBranchSpacing;
     currentY = centralY - totalHeight / 2;
 
-    branchHeights.forEach((height, index) => {
+    branchHeights.forEach(height => {
       branchPositions.push(currentY + height / 2);
       currentY += height + minBranchSpacing;
     });
@@ -514,7 +561,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       y: branchPositions[currentBranchIndex],
       width: 200,
       height: 60,
-      text: '📋 안건 및 논의사항',
+      text: '📋 아젠다 및 내용 요약',
       fillColor: '--affine-palette-shape-purple',
       strokeColor: '--affine-palette-line-purple',
       strokeWidth: 2,
@@ -676,6 +723,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
     currentBranchIndex++;
     nodeIndex++;
   }
+  let endHeight = 0;
 
   // Action items node
   if (data.action && data.action.length > 0) {
@@ -757,6 +805,171 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       elementsYMap.set(itemConnectorId, itemConnector);
       actionY += actionSpacing;
     });
+    endHeight = actionY;
+  }
+
+  // Conversation content node
+  if (data.conversation && data.conversation.length > 0) {
+    endHeight += 100;
+
+    // Filter conversations with text length >= 5 characters (excluding spaces, '.', '?')
+    const filteredConversations = data.conversation.filter(conv => {
+      if (!conv.text) return false;
+      const cleanedText = conv.text.replace(/[\s.?]/g, ''); // Remove spaces, '.', '?'
+      return cleanedText.length >= 5;
+    });
+
+    // Only proceed if there are conversations left after filtering
+    if (filteredConversations.length > 0) {
+      // Group conversations by speaker
+      const speakerGroups = new Map();
+      filteredConversations.forEach(conv => {
+        if (!speakerGroups.has(conv.speaker)) {
+          speakerGroups.set(conv.speaker, []);
+        }
+        speakerGroups.get(conv.speaker).push(conv);
+      });
+
+      // Add speaker nodes and their conversations
+      const conversationSpacing = 30;
+      let speakerIdx = 0;
+
+      const conversationNodeId = generateUniqueId(10);
+      const conversationNode = createShapeNode({
+        id: conversationNodeId,
+        x: 1800,
+        y:
+          endHeight +
+          Math.floor(
+            ((filteredConversations.length - 1) * conversationSpacing) / 2
+          ),
+        width: 200,
+        height: 60,
+        text: '🎙️ 대화내용',
+        fillColor: '--affine-palette-shape-blue',
+        strokeColor: '--affine-palette-line-blue',
+        strokeWidth: 2,
+        radius: 8,
+        index: 'a5',
+      });
+
+      elementsYMap.set(conversationNodeId, conversationNode);
+      branchNodeIds.push(conversationNodeId);
+
+      // Connector
+      const conversationConnectorId = generateUniqueId(10);
+      const conversationConnector = createConnector({
+        id: conversationConnectorId,
+        sourceId: centralNodeId,
+        targetId: conversationNodeId,
+        strokeWidth: 2,
+        strokeColor: '--affine-palette-line-grey',
+        strokeStyle: 'solid',
+        rearEndpointStyle: 'arrow',
+        index: 'b5',
+      });
+
+      elementsYMap.set(conversationConnectorId, conversationConnector);
+      let speakerY = endHeight;
+      speakerGroups.forEach((conversations, speaker) => {
+        // Create speaker node
+        const speakerNodeId = generateUniqueId(10);
+        const speakerText = `화자: ${speaker}`;
+        const speakerWidth = calculateTextWidth(speakerText);
+        const speakerHeight = 45;
+        speakerY += (conversations.length * conversationSpacing) / 2;
+
+        const speakerNode = createShapeNode({
+          id: speakerNodeId,
+          x: 2100,
+          y: speakerY,
+          width: speakerWidth,
+          height: speakerHeight,
+          text: speakerText,
+          fillColor: '--affine-palette-shape-white',
+          strokeColor: '--affine-palette-line-blue',
+          strokeWidth: 1,
+          radius: 6,
+          textAlign: 'center',
+          index: `d${40 + speakerIdx}`,
+        });
+
+        elementsYMap.set(speakerNodeId, speakerNode);
+
+        // Connector from conversation to speaker
+        const speakerConnectorId = generateUniqueId(10);
+        const speakerConnector = createConnector({
+          id: speakerConnectorId,
+          sourceId: conversationNodeId,
+          targetId: speakerNodeId,
+          strokeWidth: 1,
+          strokeColor: '--affine-palette-line-grey',
+          strokeStyle: 'solid',
+          index: `e${40000 + speakerIdx * 100}`,
+        });
+
+        elementsYMap.set(speakerConnectorId, speakerConnector);
+
+        // Sort conversations by time for this speaker
+        const sortedConvs = conversations.sort((a: any, b: any) => {
+          const parseTime = (timeStr: string) => {
+            const parts = timeStr.split(':');
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+          };
+          return parseTime(a.time) - parseTime(b.time);
+        });
+
+        // Add individual conversation nodes
+        let convY =
+          speakerY -
+          Math.floor(((sortedConvs.length - 1) * conversationSpacing) / 2);
+
+        sortedConvs.forEach((conv: any, convIdx: number) => {
+          const convText = `${conv.time}: ${conv.text}`;
+          const convWidth = calculateTextWidth(convText);
+          const convHeight = 30;
+
+          const convNodeId = generateUniqueId(10);
+          const convNode = createShapeNode({
+            id: convNodeId,
+            x: 2400,
+            y: convY,
+            width: convWidth,
+            height: convHeight,
+            text: convText,
+            fillColor: '--affine-palette-shape-white',
+            strokeColor: '--affine-palette-line-blue',
+            strokeWidth: 1,
+            radius: 4,
+            textAlign: 'left',
+            fontSize: 12,
+
+            index: `e${50000 + speakerIdx * 100 + convIdx}`,
+          });
+
+          elementsYMap.set(convNodeId, convNode);
+
+          // Connector from speaker to conversation
+          const convConnectorId = generateUniqueId(10);
+          const convConnector = createConnector({
+            id: convConnectorId,
+            sourceId: speakerNodeId,
+            targetId: convNodeId,
+            strokeWidth: 1,
+            strokeColor: '--affine-palette-line-blue',
+            strokeStyle: 'dashed',
+            index: `f${50000 + speakerIdx * 100 + convIdx}`,
+          });
+
+          elementsYMap.set(convConnectorId, convConnector);
+          convY += conversationSpacing;
+        });
+        speakerIdx++;
+        speakerY += (conversations.length * conversationSpacing) / 2 + 30;
+      });
+
+      currentBranchIndex++;
+    } // End of filteredConversations.length > 0 check
   }
 
   const boxedElements = new Y.Map();
@@ -766,209 +979,8 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
 
   blocks.set(surfaceId, surfaceBlock);
 
-  // Create a note block with meeting content
-  const noteBlock = new Y.Map();
-  noteBlock.set('sys:id', noteId);
-  noteBlock.set('sys:flavour', 'affine:note');
-  noteBlock.set('sys:version', 1);
-
-  const noteChildren = new Y.Array();
-
-  // Add meeting info header
-  const headerIds: string[] = [];
-
-  // Meeting title
-  const titleId = generateUniqueId(10);
-  const titleBlock = createParagraphBlock(
-    titleId,
-    `# ${data.title || '회의록'}`,
-    'h1'
-  );
-  blocks.set(titleId, titleBlock);
-  headerIds.push(titleId);
-
-  // Meeting info
-  if (data.date || data.time) {
-    const dateId = generateUniqueId(10);
-    const dateText = `📅 ${data.date || ''} ${data.time || ''}`.trim();
-    blocks.set(dateId, createParagraphBlock(dateId, dateText, 'text'));
-    headerIds.push(dateId);
-  }
-
-  if (data.location) {
-    const locationId = generateUniqueId(10);
-    blocks.set(
-      locationId,
-      createParagraphBlock(locationId, `📍 ${data.location}`, 'text')
-    );
-    headerIds.push(locationId);
-  }
-
-  if (data.participants && data.participants.length > 0) {
-    const participantsId = generateUniqueId(10);
-    blocks.set(
-      participantsId,
-      createParagraphBlock(
-        participantsId,
-        `👥 ${data.participants.join(', ')}`,
-        'text'
-      )
-    );
-    headerIds.push(participantsId);
-  }
-
-  // Add all header blocks to note
-  if (headerIds.length > 0) {
-    noteChildren.push(headerIds);
-  }
-
-  // Add structured sections for mindmap conversion
-  if (data.agenda && data.agenda.length > 0) {
-    const agendaHeaderId = generateUniqueId(10);
-    blocks.set(
-      agendaHeaderId,
-      createParagraphBlock(agendaHeaderId, '## 📋 안건', 'h2')
-    );
-    noteChildren.push([agendaHeaderId]);
-
-    data.agenda.forEach(item => {
-      const itemId = generateUniqueId(10);
-      const itemBlock = new Y.Map();
-      itemBlock.set('sys:id', itemId);
-      itemBlock.set('sys:flavour', 'affine:list');
-      itemBlock.set('sys:version', 1);
-      itemBlock.set('sys:children', new Y.Array());
-      itemBlock.set('prop:type', 'bulleted');
-      const itemText = new Y.Text();
-      itemText.insert(0, item);
-      itemBlock.set('prop:text', itemText);
-      blocks.set(itemId, itemBlock);
-      noteChildren.push([itemId]);
-    });
-  }
-
-  if (data.summary && data.summary.length > 0) {
-    const summaryHeaderId = generateUniqueId(10);
-    blocks.set(
-      summaryHeaderId,
-      createParagraphBlock(summaryHeaderId, '## 💬 논의사항', 'h2')
-    );
-    noteChildren.push([summaryHeaderId]);
-
-    data.summary.forEach(item => {
-      const itemText = typeof item === 'string' ? item : Object.keys(item)[0];
-      const itemId = generateUniqueId(10);
-      const itemBlock = new Y.Map();
-      itemBlock.set('sys:id', itemId);
-      itemBlock.set('sys:flavour', 'affine:list');
-      itemBlock.set('sys:version', 1);
-      itemBlock.set('sys:children', new Y.Array());
-      itemBlock.set('prop:type', 'bulleted');
-      const text = new Y.Text();
-      text.insert(0, itemText);
-      itemBlock.set('prop:text', text);
-      blocks.set(itemId, itemBlock);
-      noteChildren.push([itemId]);
-    });
-  }
-
-  if (data.action && data.action.length > 0) {
-    const actionHeaderId = generateUniqueId(10);
-    blocks.set(
-      actionHeaderId,
-      createParagraphBlock(actionHeaderId, '## ✅ 액션아이템', 'h2')
-    );
-    noteChildren.push([actionHeaderId]);
-
-    data.action.forEach(item => {
-      const itemId = generateUniqueId(10);
-      const itemBlock = new Y.Map();
-      itemBlock.set('sys:id', itemId);
-      itemBlock.set('sys:flavour', 'affine:list');
-      itemBlock.set('sys:version', 1);
-      itemBlock.set('sys:children', new Y.Array());
-      itemBlock.set('prop:type', 'todo');
-      itemBlock.set('prop:checked', false);
-      const itemText = new Y.Text();
-      itemText.insert(0, item);
-      itemBlock.set('prop:text', itemText);
-      blocks.set(itemId, itemBlock);
-      noteChildren.push([itemId]);
-    });
-  }
-
-  noteBlock.set('sys:children', noteChildren);
-  noteBlock.set('prop:xywh', '[400,300,800,600]');
-  noteBlock.set('prop:background', '--affine-palette-shape-white');
-  noteBlock.set('prop:index', 'a0');
-  noteBlock.set('prop:hidden', false);
-  noteBlock.set('prop:displayMode', 'both');
-
-  blocks.set(noteId, noteBlock);
-
-  // Set metadata
-  const meta = doc.getMap('meta');
-  meta.set('workspaceVersion', 2);
-
-  const blockVersions = new Y.Map();
-  blockVersions.set('affine:page', 2);
-  blockVersions.set('affine:surface', 5);
-  blockVersions.set('affine:note', 1);
-  meta.set('blockVersions', blockVersions);
-
-  // Create pages metadata
-  const pages = new Y.Array();
-  const pageMeta = new Y.Map();
-  const currentTime = Date.now();
-  pageMeta.set('id', pageId);
-  pageMeta.set('title', formattedTitle);
-  pageMeta.set('createDate', currentTime);
-  pageMeta.set('updatedDate', currentTime);
-  pageMeta.set('tags', new Y.Array());
-
-  pages.push([pageMeta]);
-  meta.set('pages', pages);
-
-  return doc;
-}
-
-export function createMeetingNoteDocument(data: MeetingNoteData): Y.Doc {
-  const doc = new Y.Doc();
-  const blocks = doc.getMap('blocks');
-
-  // Create IDs
-  const pageId = 'temp-page-id'; // Will be replaced by server
-  const noteId = generateUniqueId(10);
-
   const blockIds: string[] = [];
   const allBlocks: { [key: string]: Y.Map<any> } = {};
-
-  // Create root page block
-  const pageBlock = new Y.Map();
-  pageBlock.set('sys:id', pageId);
-  pageBlock.set('sys:flavour', 'affine:page');
-  pageBlock.set('sys:version', 2);
-
-  const pageChildren = new Y.Array();
-  pageChildren.push([noteId]);
-  pageBlock.set('sys:children', pageChildren);
-
-  // Set page title with date/time format
-  let formattedTitle = '📋';
-  if (data.date && data.time) {
-    formattedTitle += `${data.date} ${data.time} `;
-  } else if (data.date) {
-    formattedTitle += `${data.date} `;
-  }
-  formattedTitle += data.title || '회의록';
-
-  const titleText = new Y.Text();
-  titleText.insert(0, formattedTitle);
-  pageBlock.set('prop:title', titleText);
-
-  blocks.set(pageId, pageBlock);
-
-  // Meeting info section - combined format (no title in document body)
   const meetingInfoItems = [];
 
   // Combine date and time
@@ -1009,7 +1021,7 @@ export function createMeetingNoteDocument(data: MeetingNoteData): Y.Doc {
     const agendaHeaderId = generateUniqueId(10);
     const agendaHeader = createParagraphBlock(
       agendaHeaderId,
-      '📌 주요 안건',
+      '📌 아젠다',
       'h2'
     );
     allBlocks[agendaHeaderId] = agendaHeader;
@@ -1044,7 +1056,7 @@ export function createMeetingNoteDocument(data: MeetingNoteData): Y.Doc {
     const summaryHeaderId = generateUniqueId(10);
     const summaryHeader = createParagraphBlock(
       summaryHeaderId,
-      '💡 논의 내용 요약',
+      '💡 내용 요약',
       'h2'
     );
     allBlocks[summaryHeaderId] = summaryHeader;
@@ -1127,7 +1139,7 @@ export function createMeetingNoteDocument(data: MeetingNoteData): Y.Doc {
     const actionHeaderId = generateUniqueId(10);
     const actionHeader = createParagraphBlock(
       actionHeaderId,
-      '✅ 향후 조치 사항',
+      '✅ 엑션 아이템',
       'h2'
     );
     allBlocks[actionHeaderId] = actionHeader;
@@ -1268,29 +1280,30 @@ export function createMeetingNoteDocument(data: MeetingNoteData): Y.Doc {
     blockIds.push(tableId);
   }
 
-  // Tags will be added to page metadata, not in the document body
+  // Store all blocks
+  Object.entries(allBlocks).forEach(([id, block]) => {
+    blocks.set(id, block);
+  });
 
-  // Create note block that contains all content
+  // Create a note block with the correct children structure
   const noteBlock = new Y.Map();
   noteBlock.set('sys:id', noteId);
   noteBlock.set('sys:flavour', 'affine:note');
   noteBlock.set('sys:version', 1);
 
+  // Set children in the correct structure
   const noteChildren = new Y.Array();
-  noteChildren.push(blockIds);
+  blockIds.forEach(id => {
+    noteChildren.push([id]);
+  });
   noteBlock.set('sys:children', noteChildren);
-
-  noteBlock.set('prop:xywh', '[0,0,800,600]');
-  noteBlock.set('prop:background', '--affine-palette-shape-blue');
+  noteBlock.set('prop:xywh', '[400,300,800,600]');
+  noteBlock.set('prop:background', '--affine-palette-shape-white');
   noteBlock.set('prop:index', 'a0');
   noteBlock.set('prop:hidden', false);
+  noteBlock.set('prop:displayMode', 'both');
 
   blocks.set(noteId, noteBlock);
-
-  // Add all content blocks
-  Object.entries(allBlocks).forEach(([id, block]) => {
-    blocks.set(id, block);
-  });
 
   // Set metadata
   const meta = doc.getMap('meta');
@@ -1298,11 +1311,8 @@ export function createMeetingNoteDocument(data: MeetingNoteData): Y.Doc {
 
   const blockVersions = new Y.Map();
   blockVersions.set('affine:page', 2);
+  blockVersions.set('affine:surface', 5);
   blockVersions.set('affine:note', 1);
-  blockVersions.set('affine:paragraph', 1);
-  blockVersions.set('affine:list', 1);
-  blockVersions.set('affine:divider', 1);
-  blockVersions.set('affine:table', 1);
   meta.set('blockVersions', blockVersions);
 
   // Create pages metadata
@@ -1313,8 +1323,6 @@ export function createMeetingNoteDocument(data: MeetingNoteData): Y.Doc {
   pageMeta.set('title', formattedTitle);
   pageMeta.set('createDate', currentTime);
   pageMeta.set('updatedDate', currentTime);
-
-  // Tags will be handled at the controller level with tag IDs
   pageMeta.set('tags', new Y.Array());
 
   pages.push([pageMeta]);

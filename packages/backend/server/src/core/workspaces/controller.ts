@@ -32,10 +32,7 @@ import { AccessController } from '../permission';
 import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
 import { CreateDocDto, CreateMeetingDocDto, UpdateDocDto } from './dto';
-import {
-  createMeetingMindMapDocument,
-  createMeetingNoteDocument,
-} from './meeting-note-generator';
+import { createMeetingMindMapDocument } from './meeting-note-generator';
 import type { Tag } from './tag.controller';
 
 @Controller('/api/workspaces')
@@ -414,13 +411,8 @@ export class WorkspacesController {
       }
       formattedTitle += body.title || '회의록';
 
-      // Check if this is a meeting document that should be created as mindmap
-      const isMeetingMindMap = this.isMeetingDocument(body.title || '회의록');
-
       // Create meeting note document structure
-      const meetingDoc = isMeetingMindMap
-        ? createMeetingMindMapDocument(body)
-        : createMeetingNoteDocument(body);
+      const meetingDoc = createMeetingMindMapDocument(body);
       const content = Y.encodeStateAsUpdate(meetingDoc);
 
       this.logger.log(

@@ -74,9 +74,7 @@ yarn affine server prisma studio                   # Open Prisma Studio
 
 Test accounts:
 
-- dev@affine.pro / dev (regular user)
 - pro@affine.pro / pro (pro user)
-- team@affine.pro / team (team user)
 
 ### Desktop App Development
 
@@ -153,3 +151,67 @@ BUILD_TYPE=canary SKIP_WEB_BUILD=1 HOIST_NODE_MODULES=1 yarn affine @affine/elec
 - E2E tests: Playwright in `/tests` directory
 - Run specific test: `yarn test path/to/test.spec.ts`
 - Coverage: `yarn test --coverage`
+
+## REST API Architecture on BlockSuite/Yjs
+
+### Overview
+
+AFFiNE implements REST APIs on top of BlockSuite/Yjs using a layered architecture that preserves CRDT collaboration benefits while providing traditional HTTP endpoints.
+
+### Architecture Layers
+
+1. **REST Controllers** → 2. **Storage Adapters** → 3. **Yjs Document Handling** → 4. **Database Storage**
+
+### Key Components
+
+#### REST Endpoints
+
+- `WorkspacesController` (`/api/workspaces`):
+  - `GET /api/workspaces/:id/docs/:guid` - Retrieve document binary
+  - `POST /api/workspaces/:id/docs` - Create new documents
+  - `PUT /api/workspaces/:id/docs/:guid` - Update documents
+  - `POST /api/workspaces/:id/docs/from-meeting` - Create meeting notes
+- `TagController` - Workspace tag management
+
+#### Document Serialization
+
+```typescript
+// Binary serialization (stored format)
+Y.encodeStateAsUpdate(ydoc); // → Uint8Array
+// Deserialization
+Y.applyUpdate(ydoc, binaryData);
+```
+
+#### Storage Adapter Pattern
+
+`PgWorkspaceDocStorageAdapter` provides:
+
+- `pushDocUpdates()` - Store Yjs updates
+- `getDoc()` - Retrieve and merge updates
+- Snapshot management for performance
+
+#### Document Reader Pattern
+
+- `DocReader` abstract class
+- `DatabaseDocReader` - Direct DB access
+- Content parsing and Markdown conversion
+
+### Implementation Patterns
+
+1. **Update-based Storage**: Stores individual Yjs updates + periodic snapshots
+2. **Binary Data Flow**: All documents handled as `Uint8Array`/`Buffer`
+3. **Permission Integration**: All endpoints check access control
+4. **Event-driven Processing**: Document operations emit events
+
+### Special Features
+
+- **Meeting Note Generator**: Creates structured Yjs documents with mindmap visualizations
+- **Tag Management**: Tags stored in workspace Yjs document (`meta.properties.tags.options`)
+- **Content Parsing**: BlockSuite utilities for title extraction and Markdown conversion
+
+### Key Insights
+
+- No direct BlockSuite imports in REST layer
+- Binary-first approach maintains CRDT compatibility
+- Separation of HTTP concerns from document operations
+- Performance optimized with caching and queued processing
