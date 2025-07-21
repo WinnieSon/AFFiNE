@@ -32,7 +32,10 @@ import { AccessController } from '../permission';
 import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
 import { CreateDocDto, CreateMeetingDocDto, UpdateDocDto } from './dto';
-import { createMeetingNoteDocument } from './meeting-note-generator';
+import {
+  createMeetingMindMapDocument,
+  createMeetingNoteDocument,
+} from './meeting-note-generator';
 import type { Tag } from './tag.controller';
 
 @Controller('/api/workspaces')
@@ -411,8 +414,13 @@ export class WorkspacesController {
       }
       formattedTitle += body.title || '회의록';
 
+      // Check if this is a meeting document that should be created as mindmap
+      const isMeetingMindMap = this.isMeetingDocument(body.title || '회의록');
+
       // Create meeting note document structure
-      const meetingDoc = createMeetingNoteDocument(body);
+      const meetingDoc = isMeetingMindMap
+        ? createMeetingMindMapDocument(body)
+        : createMeetingNoteDocument(body);
       const content = Y.encodeStateAsUpdate(meetingDoc);
 
       this.logger.log(
@@ -629,6 +637,31 @@ export class WorkspacesController {
       );
       // Don't throw - this is not critical for document creation
     }
+  }
+
+  /**
+   * Check if document title indicates it should be created as mindmap
+   */
+  private isMeetingDocument(title: string): boolean {
+    const meetingKeywords = [
+      '회의',
+      '회의록',
+      '미팅',
+      'meeting',
+      'minutes',
+      'conference',
+      '논의',
+      'discussion',
+      '세미나',
+      'seminar',
+      '워크숍',
+      'workshop',
+    ];
+
+    const lowerTitle = title.toLowerCase();
+    return meetingKeywords.some(keyword =>
+      lowerTitle.includes(keyword.toLowerCase())
+    );
   }
 
   /**
