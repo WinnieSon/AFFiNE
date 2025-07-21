@@ -1,6 +1,7 @@
 import { AffineContext } from '@affine/core/components/context';
 import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { router } from '@affine/core/desktop/router';
+import { VirtualKeyboardProvider } from '@affine/core/mobile/modules/virtual-keyboard';
 import { configureCommonModules } from '@affine/core/modules';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
@@ -15,7 +16,12 @@ import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { getWorkerUrl } from '@affine/env/worker';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { CacheProvider } from '@emotion/react';
-import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
+import {
+  Framework,
+  FrameworkRoot,
+  getCurrentStore,
+  LiveData,
+} from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
@@ -84,6 +90,14 @@ framework.impl(PopupWindowProvider, {
     window.open(url, '_blank', 'popup noreferrer noopener');
   },
 });
+
+// Provide a stub implementation for VirtualKeyboardProvider in web
+framework.impl(VirtualKeyboardProvider, {
+  visible$: new LiveData(false),
+  height$: new LiveData(0),
+  onChange: () => () => {}, // No-op for web
+});
+
 const frameworkProvider = framework.provider();
 
 // setup application lifecycle events, and emit application start event
