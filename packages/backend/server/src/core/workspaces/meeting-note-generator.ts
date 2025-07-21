@@ -272,6 +272,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
   elementsYMap.set(centralNodeId, centralNode);
 
   // Create branch nodes
+  let nodeIndex = 0;
   const branchNodeIds = [];
 
   // Calculate the height needed for each branch section
@@ -969,6 +970,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       });
 
       currentBranchIndex++;
+      nodeIndex++;
     } // End of filteredConversations.length > 0 check
   }
 
