@@ -16,9 +16,9 @@ export type SignUpProps = {
 export default function SignUp(props: SignUpProps) {
   return (
     <Template>
-      <Title>Sign up to AFFiNE Cloud</Title>
+      <Title>Sign up to Palcon AI Cloud</Title>
       <Content>
-        <P>You are signing up to AFFiNE. Here is your code:</P>
+        <P>You are signing up to Palcon AI. Here is your code:</P>
         <OnelineCodeBlock>{props.otp}</OnelineCodeBlock>
         <P>
           Alternatively, you can sign up directly by clicking the magic link
@@ -36,6 +36,6 @@ export default function SignUp(props: SignUpProps) {
 }
 
 SignUp.PreviewProps = {
-  url: 'https://app.affine.pro/magic-link?token=123456&email=test@test.com',
+  url: 'https://palcon.wlab.me/magic-link?token=123456&email=sbson89@gmail.com',
   otp: '123456',
 };

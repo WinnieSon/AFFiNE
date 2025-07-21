@@ -6,6 +6,7 @@ import { type ReactNode, useCallback } from 'react';
 
 import dotBgDark from './assets/dot-bg.dark.png';
 import dotBgLight from './assets/dot-bg.light.png';
+import palconLogo from './assets/palcon-logo.png';
 import { DesktopNavbar } from './desktop-navbar';
 import * as styles from './index.css';
 import { MobileNavbar } from './mobile-navbar';
@@ -35,7 +36,7 @@ export const AffineOtherPageLayout = ({
       ) : (
         <div className={styles.topNav}>
           <a href="/" rel="noreferrer" className={styles.affineLogo}>
-            <Logo1Icon width={24} height={24} />
+            <img src={palconLogo} alt="Palcon AI" width={24} height={24} />
           </a>
 
           <DesktopNavbar />

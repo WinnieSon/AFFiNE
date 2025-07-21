@@ -214,10 +214,10 @@ export function Template(props: PropsWithChildren) {
           }}
         >
           <Section>
-            <Link href="https://affine.pro">
+            <Link href="https://palcon.wlab.me">
               <Img
-                src="https://cdn.affine.pro/mail/2023-8-9/affine-logo.png"
-                alt="AFFiNE logo"
+                src="https://raw.githubusercontent.com/WinnieSon/AFFiNE/feature/rec_notice/packages/frontend/core/public/favicon-192.png"
+                alt="Palcon AI logo"
                 height="32px"
               />
             </Link>

@@ -59,7 +59,8 @@
       "Bash(yarn prisma:*)",
       "Bash(yarn graphql:codegen:*)",
       "Bash(yarn run:*)",
-      "Bash(yarn --help)"
+      "Bash(yarn --help)",
+      "Bash(sips:*)"
     ],
     "deny": []
   }
