@@ -55,43 +55,6 @@ function createParagraphBlock(
   return block;
 }
 
-// Create a list block
-function createListBlock(
-  id: string,
-  items: string[],
-  type: string = 'bulleted'
-): Y.Map<any> {
-  const listBlock = new Y.Map();
-  listBlock.set('sys:id', id);
-  listBlock.set('sys:flavour', 'affine:list');
-  listBlock.set('sys:version', 1);
-  listBlock.set('prop:type', type);
-
-  const children = new Y.Array();
-  const listItems: string[] = [];
-
-  items.forEach(item => {
-    const itemId = generateUniqueId(10);
-    listItems.push(itemId);
-
-    const itemBlock = new Y.Map();
-    itemBlock.set('sys:id', itemId);
-    itemBlock.set('sys:flavour', 'affine:list');
-    itemBlock.set('sys:version', 1);
-    itemBlock.set('sys:children', new Y.Array());
-    itemBlock.set('prop:type', type);
-
-    const itemText = new Y.Text();
-    itemText.insert(0, item);
-    itemBlock.set('prop:text', itemText);
-  });
-
-  children.push(listItems);
-  listBlock.set('sys:children', children);
-
-  return { listBlock, listItems };
-}
-
 // Create a divider block
 function createDividerBlock(id: string): Y.Map<any> {
   const block = new Y.Map();

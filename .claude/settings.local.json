@@ -60,7 +60,9 @@
       "Bash(yarn graphql:codegen:*)",
       "Bash(yarn run:*)",
       "Bash(yarn --help)",
-      "Bash(sips:*)"
+      "Bash(sips:*)",
+      "Bash(yarn install)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": []
   }

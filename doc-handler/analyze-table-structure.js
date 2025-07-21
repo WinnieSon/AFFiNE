@@ -4,8 +4,8 @@
  * Analyze table structure in document
  */
 
-const https = require('https');
-const http = require('http');
+const https = require('node:https');
+const http = require('node:http');
 const Y = require('yjs');
 
 // Server configuration
@@ -42,7 +42,7 @@ function makeRequest(options, data = null, binary = false) {
             body: binary ? Buffer.concat(body) : body ? JSON.parse(body) : null,
           };
           resolve(result);
-        } catch (e) {
+        } catch {
           resolve({
             statusCode: res.statusCode,
             headers: res.headers,

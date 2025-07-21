@@ -219,7 +219,7 @@ export class RecordingController {
       if (meeting) {
         deviceName = meeting.device;
       }
-      
+
       // 미팅 시작 시간 제거
       const index = meetings.findIndex(m => m.meetingId === data.meetingId);
       if (index >= 0) {
@@ -245,12 +245,14 @@ export class RecordingController {
       if (!waitingDevicesByWorkspace.has(workspaceId)) {
         waitingDevicesByWorkspace.set(workspaceId, new Map());
       }
-      const waitingDevices = waitingDevicesByWorkspace.get(workspaceId)!;
-      waitingDevices.set(deviceName, {
-        device: deviceName,
-        lastUpdate: new Date(),
-      });
-      
+      const waitingDevices = waitingDevicesByWorkspace.get(workspaceId);
+      if (waitingDevices) {
+        waitingDevices.set(deviceName, {
+          device: deviceName,
+          lastUpdate: new Date(),
+        });
+      }
+
       const waitingEvent: RecordingEvent = {
         type: 'recording_update',
         workspaceId,
@@ -323,12 +325,17 @@ export class RecordingController {
       if (!waitingDevicesByWorkspace.has(workspaceId)) {
         waitingDevicesByWorkspace.set(workspaceId, new Map());
       }
-      const waitingDevices = waitingDevicesByWorkspace.get(workspaceId)!;
-      waitingDevices.set(data.device, {
-        device: data.device,
-        lastUpdate: now,
-      });
-    } else if (data.device && (data.status === 'recording' || data.status === 'processing')) {
+      const waitingDevices = waitingDevicesByWorkspace.get(workspaceId);
+      if (waitingDevices) {
+        waitingDevices.set(data.device, {
+          device: data.device,
+          lastUpdate: now,
+        });
+      }
+    } else if (
+      data.device &&
+      (data.status === 'recording' || data.status === 'processing')
+    ) {
       // Remove from waiting devices when it starts recording/processing
       const waitingDevices = waitingDevicesByWorkspace.get(workspaceId);
       if (waitingDevices) {
@@ -511,14 +518,15 @@ export class RecordingController {
 
     // Clean up stale waiting devices
     if (waitingDevicesByWorkspace.has(workspaceId)) {
-      const waitingDevices = waitingDevicesByWorkspace.get(workspaceId)!;
+      const waitingDevices = waitingDevicesByWorkspace.get(workspaceId);
+      if (!waitingDevices) return;
       const devicesToDelete: string[] = [];
 
       waitingDevices.forEach((device, key) => {
         const timeSinceLastUpdate = now - device.lastUpdate.getTime();
         if (timeSinceLastUpdate > HEALTH_CHECK_TIMEOUT_MS) {
           devicesToDelete.push(key);
-          
+
           // Send a stop event to notify frontend
           this.addEventForWorkspace(workspaceId, {
             type: 'recording_update',
