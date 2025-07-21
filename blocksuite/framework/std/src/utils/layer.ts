@@ -47,7 +47,16 @@ export function getElementIndex(indexable: GfxModel) {
 }
 
 export function ungroupIndex(index: string) {
-  return index.split('-')[0];
+  const ungrouped = index.split('-')[0];
+  
+  // Handle legacy indexes that don't follow fractional indexing format
+  // If the index doesn't start with a valid fractional indexing character (a-z, A-Z),
+  // return null to trigger a new index generation
+  if (!/^[a-zA-Z]/.test(ungrouped)) {
+    return null;
+  }
+  
+  return ungrouped;
 }
 
 export function insertToOrderedArray(array: GfxModel[], element: GfxModel) {

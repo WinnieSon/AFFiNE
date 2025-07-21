@@ -691,16 +691,28 @@ export class LayerManager extends GfxExtension {
   generateIndex(reverse = false): string {
     if (reverse) {
       const firstIndex = this.layers[0]?.indexes[0];
-
-      return firstIndex
-        ? generateKeyBetween(null, ungroupIndex(firstIndex))
-        : LayerManager.INITIAL_INDEX;
+      
+      if (firstIndex) {
+        const ungrouped = ungroupIndex(firstIndex);
+        // If ungroupIndex returns null (invalid index), generate a fresh index
+        return ungrouped 
+          ? generateKeyBetween(null, ungrouped)
+          : LayerManager.INITIAL_INDEX;
+      }
+      
+      return LayerManager.INITIAL_INDEX;
     } else {
       const lastIndex = last(this.layers)?.indexes[1];
-
-      return lastIndex
-        ? generateKeyBetween(ungroupIndex(lastIndex), null)
-        : LayerManager.INITIAL_INDEX;
+      
+      if (lastIndex) {
+        const ungrouped = ungroupIndex(lastIndex);
+        // If ungroupIndex returns null (invalid index), generate a fresh index
+        return ungrouped
+          ? generateKeyBetween(ungrouped, null)
+          : LayerManager.INITIAL_INDEX;
+      }
+      
+      return LayerManager.INITIAL_INDEX;
     }
   }
 
