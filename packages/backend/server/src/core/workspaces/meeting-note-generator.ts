@@ -966,7 +966,6 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       });
 
       currentBranchIndex++;
-      nodeIndex++;
     } // End of filteredConversations.length > 0 check
   }
 
