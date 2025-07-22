@@ -185,4 +185,50 @@ export class UserIdentificationResolver {
 
     return [];
   }
+
+  @Mutation(() => UserIdentificationType)
+  async updateUserIdentificationWithBulkReplace(
+    @CurrentUser() user: CurrentUserType,
+    @Args('input') input: UpdateUserIdentificationInput
+  ): Promise<UserIdentificationType> {
+    const identification = await this.prisma.userIdentification.findUnique({
+      where: { id: input.id },
+    });
+
+    if (!identification) {
+      throw new Error('User identification not found');
+    }
+
+    await this.access
+      .user(user.id)
+      .workspace(identification.workspaceId)
+      .assert('Workspace.Settings.Update');
+
+    const oldNickname = identification.nickname;
+    const newNickname = input.nickname;
+
+    // Update the user identification first
+    const { id, ...updateData } = input;
+    const updated = await this.prisma.userIdentification.update({
+      where: { id },
+      data: updateData,
+    });
+
+    // If nickname changed, trigger bulk replacement in all documents
+    if (oldNickname && newNickname && oldNickname !== newNickname) {
+      // Import necessary modules
+      const { BulkDocumentReplacer } = await import(
+        '../workspaces/bulk-document-replacer'
+      );
+      const replacer = new BulkDocumentReplacer(this.prisma);
+
+      await replacer.replaceInWorkspace(
+        identification.workspaceId,
+        oldNickname,
+        newNickname
+      );
+    }
+
+    return updated;
+  }
 }

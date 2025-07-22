@@ -8,6 +8,7 @@ import {
   useCreateUserIdentification,
   useDeleteUserIdentification,
   useUpdateUserIdentification,
+  useUpdateUserIdentificationWithBulkReplace,
   useUserIdentification,
 } from './use-user-identifications';
 
@@ -32,6 +33,8 @@ export const UserIdentificationEditModal = ({
   );
   const { create, loading: createLoading } = useCreateUserIdentification();
   const { update, loading: updateLoading } = useUpdateUserIdentification();
+  const { updateWithBulkReplace, loading: bulkReplaceLoading } =
+    useUpdateUserIdentificationWithBulkReplace();
   const { delete: deleteIdentification, loading: deleteLoading } =
     useDeleteUserIdentification();
 
@@ -41,6 +44,10 @@ export const UserIdentificationEditModal = ({
     email: '',
     imagesData: [] as string[],
   });
+  const [showBulkReplaceDialog, setShowBulkReplaceDialog] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<
+    typeof formData | null
+  >(null);
 
   useEffect(() => {
     if (isCreating) {
@@ -180,6 +187,18 @@ export const UserIdentificationEditModal = ({
       return;
     }
 
+    // Check if nickname is being changed for existing user
+    if (
+      !isCreating &&
+      existingData?.userIdentification?.nickname &&
+      formData.nickname &&
+      existingData.userIdentification.nickname !== formData.nickname
+    ) {
+      setPendingFormData(formData);
+      setShowBulkReplaceDialog(true);
+      return;
+    }
+
     try {
       if (isCreating) {
         await create({
@@ -220,6 +239,7 @@ export const UserIdentificationEditModal = ({
     update,
     onClose,
     t,
+    existingData,
   ]);
 
   const handleDelete = useCallback(async () => {
@@ -247,7 +267,56 @@ export const UserIdentificationEditModal = ({
     }
   }, [identificationId, deleteIdentification, onClose, t]);
 
-  const isLoading = createLoading || updateLoading || deleteLoading;
+  const handleBulkReplace = useCallback(async () => {
+    if (!pendingFormData || !identificationId) return;
+
+    try {
+      await updateWithBulkReplace({
+        id: identificationId,
+        ...pendingFormData,
+      });
+      notify.success({
+        title:
+          t[
+            'com.affine.settings.workspace.user-identification.success.bulk-updated'
+          ]() || 'Nickname updated across all documents',
+      });
+      setShowBulkReplaceDialog(false);
+      setPendingFormData(null);
+      onClose();
+    } catch (error) {
+      notify.error({
+        title: t['com.affine.error.unexpected-error'](),
+      });
+    }
+  }, [pendingFormData, identificationId, updateWithBulkReplace, onClose, t]);
+
+  const handleNormalUpdate = useCallback(async () => {
+    if (!pendingFormData || !identificationId) return;
+
+    try {
+      await update({
+        id: identificationId,
+        ...pendingFormData,
+      });
+      notify.success({
+        title:
+          t[
+            'com.affine.settings.workspace.user-identification.success.updated'
+          ](),
+      });
+      setShowBulkReplaceDialog(false);
+      setPendingFormData(null);
+      onClose();
+    } catch (error) {
+      notify.error({
+        title: t['com.affine.error.unexpected-error'](),
+      });
+    }
+  }, [pendingFormData, identificationId, update, onClose, t]);
+
+  const isLoading =
+    createLoading || updateLoading || deleteLoading || bulkReplaceLoading;
 
   // Don't render until data is loaded (for edit mode)
   if (!isCreating && dataLoading) {
@@ -405,6 +474,57 @@ export const UserIdentificationEditModal = ({
           </Button>
         </div>
       </div>
+
+      {showBulkReplaceDialog && (
+        <Modal
+          open
+          onOpenChange={open => {
+            if (!open) {
+              setShowBulkReplaceDialog(false);
+              setPendingFormData(null);
+            }
+          }}
+          width={400}
+        >
+          <div className={styles.bulkReplaceDialog}>
+            <h3>
+              {t[
+                'com.affine.settings.workspace.user-identification.bulk-replace.title'
+              ]() || 'Replace nickname in all documents?'}
+            </h3>
+            <p>
+              {t[
+                'com.affine.settings.workspace.user-identification.bulk-replace.description'
+              ]() ||
+                `Do you want to replace "${existingData?.userIdentification?.nickname}" with "${pendingFormData?.nickname}" in all documents in this workspace?`}
+            </p>
+            <div className={styles.bulkReplaceActions}>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  handleNormalUpdate().catch(console.error);
+                }}
+                disabled={isLoading}
+              >
+                {t[
+                  'com.affine.settings.workspace.user-identification.bulk-replace.no'
+                ]() || 'No, just update profile'}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  handleBulkReplace().catch(console.error);
+                }}
+                disabled={isLoading}
+              >
+                {t[
+                  'com.affine.settings.workspace.user-identification.bulk-replace.yes'
+                ]() || 'Yes, replace in all documents'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </Modal>
   );
 };

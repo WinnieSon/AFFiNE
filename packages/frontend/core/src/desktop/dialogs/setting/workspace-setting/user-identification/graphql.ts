@@ -81,3 +81,21 @@ export const deleteUserIdentificationMutation = {
     deleteUserIdentification(id: $id)
   }`,
 };
+
+export const updateUserIdentificationWithBulkReplaceMutation = {
+  id: 'updateUserIdentificationWithBulkReplaceMutation' as const,
+  op: 'updateUserIdentificationWithBulkReplace',
+  query: `mutation updateUserIdentificationWithBulkReplace($input: UpdateUserIdentificationInput!) {
+    updateUserIdentificationWithBulkReplace(input: $input) {
+      id
+      workspaceId
+      userId
+      nickname
+      title
+      email
+      imagesData
+      createdAt
+      updatedAt
+    }
+  }`,
+};

@@ -1472,6 +1472,7 @@ export interface Mutation {
   /** update user enabled feature */
   updateUserFeatures: Array<FeatureType>;
   updateUserIdentification: UserIdentificationType;
+  updateUserIdentificationWithBulkReplace: UserIdentificationType;
   /** Update workspace */
   updateWorkspace: WorkspaceType;
   /** Update ignored docs */
@@ -1883,6 +1884,10 @@ export interface MutationUpdateUserFeaturesArgs {
 }
 
 export interface MutationUpdateUserIdentificationArgs {
+  input: UpdateUserIdentificationInput;
+}
+
+export interface MutationUpdateUserIdentificationWithBulkReplaceArgs {
   input: UpdateUserIdentificationInput;
 }
 

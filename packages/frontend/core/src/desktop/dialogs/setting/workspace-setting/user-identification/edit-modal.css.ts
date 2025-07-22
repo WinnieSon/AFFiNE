@@ -169,3 +169,31 @@ export const label = style({
 globalStyle(`${imagePreview}:hover button`, {
   opacity: 1,
 });
+
+export const bulkReplaceDialog = style({
+  padding: 24,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 20,
+
+  '& h3': {
+    fontSize: 18,
+    fontWeight: 600,
+    margin: 0,
+    color: cssVar('textPrimaryColor'),
+  },
+
+  '& p': {
+    fontSize: 14,
+    lineHeight: 1.6,
+    color: cssVar('textSecondaryColor'),
+    margin: 0,
+  },
+});
+
+export const bulkReplaceActions = style({
+  display: 'flex',
+  gap: 12,
+  justifyContent: 'flex-end',
+  marginTop: 4,
+});

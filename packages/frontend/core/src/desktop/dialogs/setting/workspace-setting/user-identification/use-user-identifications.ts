@@ -1,10 +1,12 @@
-import { useQuery } from '@affine/core/components/hooks/use-query';
 import { useMutation } from '@affine/core/components/hooks/use-mutation';
+import { useQuery } from '@affine/core/components/hooks/use-query';
 import { useCallback } from 'react';
+
 import {
   createUserIdentificationMutation,
   deleteUserIdentificationMutation,
   updateUserIdentificationMutation,
+  updateUserIdentificationWithBulkReplaceMutation,
   userIdentificationQuery,
   userIdentificationsQuery,
 } from './graphql';
@@ -16,8 +18,9 @@ export interface UserIdentification {
   nickname?: string | null;
   title?: string | null;
   email?: string | null;
-  imageData: string;
-  imageType: string;
+  imagesData: string[];
+  imageData?: string | null;
+  imageType?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,14 +41,18 @@ export const useUserIdentifications = (workspaceId: string) => {
 
 export const useUserIdentification = (id: string | null) => {
   const { data, error, isLoading } = useQuery(
-    id ? {
-      query: userIdentificationQuery,
-      variables: { id },
-    } : null
+    id
+      ? {
+          query: userIdentificationQuery,
+          variables: { id },
+        }
+      : null
   );
 
   return {
-    data: data ? { userIdentification: data.userIdentification as UserIdentification } : undefined,
+    data: data
+      ? { userIdentification: data.userIdentification as UserIdentification }
+      : undefined,
     loading: isLoading,
     error,
   };
@@ -63,8 +70,7 @@ export const useCreateUserIdentification = () => {
       nickname?: string | null;
       title?: string | null;
       email?: string | null;
-      imageData: string;
-      imageType?: string;
+      imagesData: string[];
     }) => {
       const result = await trigger({ input });
       return result.createUserIdentification;
@@ -87,8 +93,7 @@ export const useUpdateUserIdentification = () => {
       nickname?: string | null;
       title?: string | null;
       email?: string | null;
-      imageData?: string;
-      imageType?: string;
+      imagesData?: string[];
     }) => {
       const result = await trigger({ input });
       return result.updateUserIdentification;
@@ -113,4 +118,27 @@ export const useDeleteUserIdentification = () => {
   );
 
   return { delete: deleteIdentification, loading: isMutating, error };
+};
+
+export const useUpdateUserIdentificationWithBulkReplace = () => {
+  const { trigger, isMutating, error } = useMutation({
+    mutation: updateUserIdentificationWithBulkReplaceMutation,
+  });
+
+  const updateWithBulkReplace = useCallback(
+    async (input: {
+      id: string;
+      userId?: string | null;
+      nickname?: string | null;
+      title?: string | null;
+      email?: string | null;
+      imagesData?: string[];
+    }) => {
+      const result = await trigger({ input });
+      return result.updateUserIdentificationWithBulkReplace;
+    },
+    [trigger]
+  );
+
+  return { updateWithBulkReplace, loading: isMutating, error };
 };

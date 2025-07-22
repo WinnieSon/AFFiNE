@@ -1336,6 +1336,7 @@ type Mutation {
   """update user enabled feature"""
   updateUserFeatures(features: [FeatureType!]!, id: String!): [FeatureType!]!
   updateUserIdentification(input: UpdateUserIdentificationInput!): UserIdentificationType!
+  updateUserIdentificationWithBulkReplace(input: UpdateUserIdentificationInput!): UserIdentificationType!
 
   """Update workspace"""
   updateWorkspace(input: UpdateWorkspaceInput!): WorkspaceType!
