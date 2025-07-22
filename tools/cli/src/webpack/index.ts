@@ -107,6 +107,11 @@ export function createHTMLTargetConfig(
           'signals-core'
         ).value,
       },
+      fallback: {
+        crypto: false,
+        buffer: false,
+        stream: false,
+      },
     },
     //#endregion
 
@@ -395,6 +400,11 @@ export function createWorkerTargetConfig(
       extensionAlias: { '.js': ['.js', '.ts'], '.mjs': ['.mjs', '.mts'] },
       extensions: ['.js', '.ts'],
       alias: { yjs: ProjectRoot.join('node_modules', 'yjs').value },
+      fallback: {
+        crypto: false,
+        buffer: false,
+        stream: false,
+      },
     },
 
     module: {
