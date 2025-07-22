@@ -33,6 +33,8 @@ import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
 import { CreateDocDto, CreateMeetingDocDto, UpdateDocDto } from './dto';
 import { createMeetingMindMapDocument } from './meeting-note-generator';
+import { OrganizeService } from './organize.service';
+import { SpeakerRenameService } from './speaker-rename.service';
 import type { Tag } from './tag.controller';
 
 @Controller('/api/workspaces')
@@ -46,7 +48,9 @@ export class WorkspacesController {
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly docReader: DocReader,
     private readonly models: Models,
-    private readonly event: EventBus
+    private readonly event: EventBus,
+    private readonly organizeService: OrganizeService,
+    private readonly speakerRenameService: SpeakerRenameService
   ) {}
 
   // get workspace blob
@@ -476,6 +480,24 @@ export class WorkspacesController {
         editor: user.id,
       });
 
+      // Auto-organize meeting note into YYYY-MM folder structure
+      try {
+        await this.organizeService.createDateBasedOrganization(
+          workspaceId,
+          docId,
+          user.id,
+          new Date()
+        );
+        this.logger.log(
+          `Successfully auto-organized meeting note ${docId} into YYYY-MM folder structure`
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to auto-organize meeting note into folders: ${error}`
+        );
+        // Non-critical error, continue
+      }
+
       return res.status(201).json({
         docId,
         workspaceId,
@@ -753,5 +775,58 @@ export class WorkspacesController {
       [update],
       userId
     );
+  }
+
+  /**
+   * Rename speaker across all documents in workspace
+   *
+   * @warning This operation will update ALL documents in the workspace
+   */
+  @Post('/:id/speaker-rename')
+  @CallMetric('controllers', 'workspace_speaker_rename')
+  async renameSpeaker(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Body() body: { oldName: string; newName: string; confirmWarning?: boolean }
+  ) {
+    if (!body.oldName || !body.newName) {
+      throw new Error('Both oldName and newName are required');
+    }
+
+    if (body.oldName === body.newName) {
+      throw new Error('Old name and new name cannot be the same');
+    }
+
+    // Require confirmation
+    if (!body.confirmWarning) {
+      return {
+        warning: `This operation will replace all occurrences of "${body.oldName}" with "${body.newName}" in ALL documents in this workspace. This cannot be undone.`,
+        requiresConfirmation: true,
+      };
+    }
+
+    // Check permission - user must be able to create docs (which implies write access)
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .can('Workspace.CreateDoc');
+
+    this.logger.log(
+      `User ${user.id} is renaming speaker "${body.oldName}" to "${body.newName}" in workspace ${workspaceId}`
+    );
+
+    // Perform the rename
+    const result = await this.speakerRenameService.renameSpeakerInWorkspace({
+      workspaceId,
+      oldName: body.oldName,
+      newName: body.newName,
+      userId: user.id,
+    });
+
+    return {
+      success: true,
+      result,
+      message: `Successfully renamed "${body.oldName}" to "${body.newName}" in ${result.updatedDocuments} out of ${result.totalDocuments} documents`,
+    };
   }
 }

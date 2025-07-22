@@ -11,6 +11,7 @@ import { StorageModule } from '../storage';
 import { UserModule } from '../user';
 import { WorkspacesController } from './controller';
 import { WorkspaceEvents } from './event';
+import { OrganizeService } from './organize.service';
 import {
   DocHistoryResolver,
   DocResolver,
@@ -44,6 +45,7 @@ import { TagController } from './tag.controller';
     WorkspaceBlobResolver,
     WorkspaceService,
     WorkspaceEvents,
+    OrganizeService,
   ],
   exports: [WorkspaceService],
 })
