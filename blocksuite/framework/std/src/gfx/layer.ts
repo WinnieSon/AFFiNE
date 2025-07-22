@@ -691,27 +691,47 @@ export class LayerManager extends GfxExtension {
   generateIndex(reverse = false): string {
     if (reverse) {
       const firstIndex = this.layers[0]?.indexes[0];
-      
+
       if (firstIndex) {
         const ungrouped = ungroupIndex(firstIndex);
         // If ungroupIndex returns null (invalid index), generate a fresh index
-        return ungrouped 
-          ? generateKeyBetween(null, ungrouped)
-          : LayerManager.INITIAL_INDEX;
+        if (ungrouped) {
+          try {
+            return generateKeyBetween(null, ungrouped);
+          } catch (e) {
+            console.warn(
+              'Failed to generate key with invalid index:',
+              ungrouped,
+              e
+            );
+            return generateKeyBetween(null, LayerManager.INITIAL_INDEX);
+          }
+        }
+        return LayerManager.INITIAL_INDEX;
       }
-      
+
       return LayerManager.INITIAL_INDEX;
     } else {
       const lastIndex = last(this.layers)?.indexes[1];
-      
+
       if (lastIndex) {
         const ungrouped = ungroupIndex(lastIndex);
         // If ungroupIndex returns null (invalid index), generate a fresh index
-        return ungrouped
-          ? generateKeyBetween(ungrouped, null)
-          : LayerManager.INITIAL_INDEX;
+        if (ungrouped) {
+          try {
+            return generateKeyBetween(ungrouped, null);
+          } catch (e) {
+            console.warn(
+              'Failed to generate key with invalid index:',
+              ungrouped,
+              e
+            );
+            return generateKeyBetween(LayerManager.INITIAL_INDEX, null);
+          }
+        }
+        return LayerManager.INITIAL_INDEX;
       }
-      
+
       return LayerManager.INITIAL_INDEX;
     }
   }
@@ -739,6 +759,17 @@ export class LayerManager extends GfxExtension {
 
     const currentIdx = elements.indexOf(element);
 
+    // Helper function to validate and fix indexes before using them
+    const validateIndex = (index: string | null): string | null => {
+      if (!index) return null;
+      // Check if the index starts with a valid fractional indexing character
+      if (!/^[a-zA-Z]/.test(index)) {
+        // Return null to trigger generation of a new valid index
+        return null;
+      }
+      return index;
+    };
+
     switch (direction) {
       case 'forward':
       case 'front':
@@ -753,14 +784,30 @@ export class LayerManager extends GfxExtension {
           const next2 =
             direction === 'forward' ? elements[currentIdx + 2] : null;
 
-          return generateKeyBetween(
-            next.index,
-            next2?.index
-              ? next.index < next2.index
-                ? next2.index
+          const validatedNextIndex = validateIndex(next.index);
+          const validatedNext2Index = next2 ? validateIndex(next2.index) : null;
+
+          // If the next index is invalid, generate a new index
+          if (!validatedNextIndex) {
+            return this.generateIndex();
+          }
+
+          try {
+            return generateKeyBetween(
+              validatedNextIndex,
+              validatedNext2Index && validatedNextIndex < validatedNext2Index
+                ? validatedNext2Index
                 : null
-              : null
-          );
+            );
+          } catch (e) {
+            console.warn(
+              'Failed to generate key between indexes:',
+              validatedNextIndex,
+              validatedNext2Index,
+              e
+            );
+            return this.generateIndex();
+          }
         }
       case 'backward':
       case 'back':
@@ -772,10 +819,30 @@ export class LayerManager extends GfxExtension {
           const pre2 =
             direction === 'backward' ? elements[currentIdx - 2] : null;
 
-          return generateKeyBetween(
-            !pre2 || pre2?.index >= pre.index ? null : pre2.index,
-            pre.index
-          );
+          const validatedPreIndex = validateIndex(pre.index);
+          const validatedPre2Index = pre2 ? validateIndex(pre2.index) : null;
+
+          // If the previous index is invalid, generate a new index
+          if (!validatedPreIndex) {
+            return this.generateIndex(true);
+          }
+
+          try {
+            return generateKeyBetween(
+              !validatedPre2Index || validatedPre2Index >= validatedPreIndex
+                ? null
+                : validatedPre2Index,
+              validatedPreIndex
+            );
+          } catch (e) {
+            console.warn(
+              'Failed to generate key between indexes:',
+              validatedPre2Index,
+              validatedPreIndex,
+              e
+            );
+            return this.generateIndex(true);
+          }
         }
     }
   }

@@ -1,7 +1,7 @@
 import type { ColumnDataType } from '@blocksuite/affine/model';
 import { Array as YArray, type Map as YMap, type Text as YText } from 'yjs';
 
-import { deltaToMd, getConverters } from './delta-to-md';
+import { deltaToMd, getConverters } from './delta-to-md/index.js';
 import type {
   BaseParsedBlock,
   Flavour,
@@ -11,7 +11,7 @@ import type {
   SerializedCells,
   YBlock,
   YBlocks,
-} from './types';
+} from './types.js';
 
 export const parseBlockToMd = (
   block: BaseParsedBlock,

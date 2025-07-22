@@ -266,13 +266,12 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
     strokeColor: '--affine-palette-line-blue',
     strokeWidth: 2,
     radius: 8,
-    index: 'a0',
+    index: 'a0', // This is a valid fractional index
   });
 
   elementsYMap.set(centralNodeId, centralNode);
 
   // Create branch nodes
-  let nodeIndex = 0;
   const branchNodeIds = [];
 
   // Calculate the height needed for each branch section
@@ -390,7 +389,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       strokeColor: '--affine-palette-line-yellow',
       strokeWidth: 2,
       radius: 8,
-      index: 'a1',
+      index: 'a1', // This is a valid fractional index
     });
 
     elementsYMap.set(infoNodeId, infoNode);
@@ -404,7 +403,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       targetId: infoNodeId,
       strokeWidth: 2,
       rearEndpointStyle: 'arrow',
-      index: 'b1',
+      index: 'a0V', // Changed from 'b1' to valid fractional index
     });
 
     elementsYMap.set(infoConnectorId, infoConnector);
@@ -424,7 +423,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         text: `${data.date || ''} ${data.time || ''}`.trim(),
         fillColor: '--affine-palette-shape-white',
         strokeColor: '--affine-palette-line-grey',
-        index: 'c1',
+        index: 'a0i', // Changed from 'c1' to valid fractional index
       });
 
       elementsYMap.set(dateNodeId, dateNode);
@@ -435,7 +434,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         id: dateConnectorId,
         sourceId: infoNodeId,
         targetId: dateNodeId,
-        index: 'd1',
+        index: 'a0v', // Changed from 'd1' to valid fractional index
       });
 
       elementsYMap.set(dateConnectorId, dateConnector);
@@ -454,7 +453,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         text: `📍 ${data.location}`,
         fillColor: '--affine-palette-shape-white',
         strokeColor: '--affine-palette-line-grey',
-        index: 'c2',
+        index: 'a0l', // Changed from 'c2' to valid fractional index
       });
 
       elementsYMap.set(locationNodeId, locationNode);
@@ -465,7 +464,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         id: locationConnectorId,
         sourceId: infoNodeId,
         targetId: locationNodeId,
-        index: 'd2',
+        index: 'a0z', // Changed from 'd2' to valid fractional index
       });
 
       elementsYMap.set(locationConnectorId, locationConnector);
@@ -473,7 +472,6 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
     }
 
     currentBranchIndex++;
-    nodeIndex++;
   }
 
   // Participants node
@@ -490,7 +488,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       strokeColor: '--affine-palette-line-green',
       strokeWidth: 2,
       radius: 8,
-      index: 'a2',
+      index: 'a2', // This is a valid fractional index
     });
 
     elementsYMap.set(participantsNodeId, participantsNode);
@@ -504,7 +502,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       targetId: participantsNodeId,
       strokeWidth: 2,
       rearEndpointStyle: 'arrow',
-      index: 'b2',
+      index: 'a1V', // Changed from 'b2' to valid fractional index
     });
 
     elementsYMap.set(participantsConnectorId, participantsConnector);
@@ -530,7 +528,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         text: participant,
         fillColor: '--affine-palette-shape-white',
         strokeColor: '--affine-palette-line-grey',
-        index: `c${10 + idx}`,
+        index: `a${(30 + idx * 2).toString().padStart(4, '0')}`, // a0030, a0032, a0034, etc.
         textAlign: 'left',
       });
 
@@ -542,7 +540,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         id: participantConnectorId,
         sourceId: participantsNodeId,
         targetId: participantNodeId,
-        index: `d${10 + idx}`,
+        index: `a${(31 + idx * 2).toString().padStart(4, '0')}`, // a0031, a0033, a0035, etc.
       });
 
       elementsYMap.set(participantConnectorId, participantConnector);
@@ -550,7 +548,6 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
     });
 
     currentBranchIndex++;
-    nodeIndex++;
   }
 
   // Agenda node with integrated discussion
@@ -567,7 +564,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       strokeColor: '--affine-palette-line-purple',
       strokeWidth: 2,
       radius: 8,
-      index: 'a3',
+      index: 'a3', // This is a valid fractional index
     });
 
     elementsYMap.set(agendaNodeId, agendaNode);
@@ -583,7 +580,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       strokeColor: '--affine-palette-line-grey',
       strokeStyle: 'solid',
       rearEndpointStyle: 'arrow',
-      index: 'b3',
+      index: 'a2V', // Changed from 'b3' to valid fractional index
     });
 
     elementsYMap.set(agendaConnectorId, agendaConnector);
@@ -633,7 +630,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         strokeWidth: 1,
         radius: 4,
         textAlign: 'left',
-        index: `c${20 + idx}`,
+        index: `a${(40 + idx * 2).toString().padStart(4, '0')}`, // a0040, a0042, a0044, etc.
       });
 
       elementsYMap.set(itemNodeId, itemNode);
@@ -647,7 +644,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         strokeWidth: 1,
         strokeColor: '--affine-palette-line-grey',
         strokeStyle: 'solid',
-        index: `d${20 + idx}`,
+        index: `a${(41 + idx * 2).toString().padStart(4, '0')}`, // a0041, a0043, a0045, etc.
       });
 
       elementsYMap.set(itemConnectorId, itemConnector);
@@ -693,7 +690,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
                 strokeStyle: 'dashed',
                 radius: 4,
                 textAlign: 'left',
-                index: `e${10000 + idx * 100 + detailIdx}`,
+                index: `a${(50 + idx * 10 + detailIdx).toString().padStart(4, '0')}`, // a0050, a0051, etc.
               });
 
               elementsYMap.set(detailNodeId, detailNode);
@@ -707,7 +704,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
                 strokeWidth: 1,
                 strokeColor: '--affine-palette-line-purple',
                 strokeStyle: 'dashed',
-                index: `f${100000 + idx * 100 + detailIdx}`,
+                index: `a${(500 + idx * 10 + detailIdx).toString().padStart(4, '0')}`, // a0500, a0501, etc.
               });
 
               elementsYMap.set(detailConnectorId, detailConnector);
@@ -722,7 +719,6 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
     });
 
     currentBranchIndex++;
-    nodeIndex++;
   }
   let endHeight = 0;
 
@@ -740,7 +736,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       strokeColor: '--affine-palette-line-red',
       strokeWidth: 2,
       radius: 8,
-      index: 'a4',
+      index: 'a4', // This is a valid fractional index
     });
 
     elementsYMap.set(actionNodeId, actionNode);
@@ -756,7 +752,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       strokeColor: '--affine-palette-line-grey',
       strokeStyle: 'solid',
       rearEndpointStyle: 'arrow',
-      index: 'b4',
+      index: 'a3V', // Changed from 'b4' to valid fractional index
     });
 
     elementsYMap.set(actionConnectorId, actionConnector);
@@ -786,7 +782,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         strokeWidth: 1,
         radius: 4,
         textAlign: 'left',
-        index: `c${30 + idx}`,
+        index: `a${(60 + idx * 2).toString().padStart(4, '0')}`, // a0060, a0062, a0064, etc.
       });
 
       elementsYMap.set(itemNodeId, itemNode);
@@ -800,7 +796,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         strokeWidth: 1,
         strokeColor: '--affine-palette-line-grey',
         strokeStyle: 'solid',
-        index: `d${30 + idx}`,
+        index: `a${(61 + idx * 2).toString().padStart(4, '0')}`, // a0061, a0063, a0065, etc.
       });
 
       elementsYMap.set(itemConnectorId, itemConnector);
@@ -851,7 +847,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         strokeColor: '--affine-palette-line-blue',
         strokeWidth: 2,
         radius: 8,
-        index: 'a5',
+        index: 'a5', // This is a valid fractional index
       });
 
       elementsYMap.set(conversationNodeId, conversationNode);
@@ -867,7 +863,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         strokeColor: '--affine-palette-line-grey',
         strokeStyle: 'solid',
         rearEndpointStyle: 'arrow',
-        index: 'b5',
+        index: 'a4V', // Changed from 'b5' to valid fractional index
       });
 
       elementsYMap.set(conversationConnectorId, conversationConnector);
@@ -892,7 +888,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
           strokeWidth: 1,
           radius: 6,
           textAlign: 'center',
-          index: `d${40 + speakerIdx}`,
+          index: `a${(70 + speakerIdx * 2).toString().padStart(4, '0')}`, // a0070, a0072, a0074, etc.
         });
 
         elementsYMap.set(speakerNodeId, speakerNode);
@@ -906,7 +902,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
           strokeWidth: 1,
           strokeColor: '--affine-palette-line-grey',
           strokeStyle: 'solid',
-          index: `e${40000 + speakerIdx * 100}`,
+          index: `a${(71 + speakerIdx * 2).toString().padStart(4, '0')}`, // a0071, a0073, a0075, etc.
         });
 
         elementsYMap.set(speakerConnectorId, speakerConnector);
@@ -945,7 +941,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
             textAlign: 'left',
             fontSize: 12,
 
-            index: `e${50000 + speakerIdx * 100 + convIdx}`,
+            index: `a${(80 + speakerIdx * 100 + convIdx).toString().padStart(4, '0')}`, // a0080, a0081, etc.
           });
 
           elementsYMap.set(convNodeId, convNode);
@@ -959,7 +955,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
             strokeWidth: 1,
             strokeColor: '--affine-palette-line-blue',
             strokeStyle: 'dashed',
-            index: `f${50000 + speakerIdx * 100 + convIdx}`,
+            index: `a${(8000 + speakerIdx * 100 + convIdx).toString().padStart(4, '0')}`, // a8000, a8001, etc.
           });
 
           elementsYMap.set(convConnectorId, convConnector);

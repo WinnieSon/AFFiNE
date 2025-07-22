@@ -26,7 +26,7 @@ import {
   Text as YText,
 } from 'yjs';
 
-import { getStoreManager } from './bs-store';
+import { getStoreManager } from './bs-store.js';
 
 const blocksuiteSchema = new Schema();
 blocksuiteSchema.register([...AffineSchemas]);
@@ -916,4 +916,8 @@ export function readAllDocIdsFromRootDoc(
   return Array.from(docIds);
 }
 
-export { parseBlock, parseBlockToMd, parsePageDoc } from './doc-parser/parser';
+export {
+  parseBlock,
+  parseBlockToMd,
+  parsePageDoc,
+} from './doc-parser/parser.js';

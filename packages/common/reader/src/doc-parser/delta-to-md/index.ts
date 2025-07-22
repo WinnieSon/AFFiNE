@@ -1,2 +1,2 @@
-export { getConverters } from './delta-converters';
-export { deltaToMd } from './delta-to-md';
+export { getConverters } from './delta-converters.js';
+export { deltaToMd } from './delta-to-md.js';

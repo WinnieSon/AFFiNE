@@ -137,7 +137,11 @@ export class ConnectorElementView extends GfxElementModelView<ConnectorElementMo
       const labelElement =
         curLabelElement || new LocalShapeElementModel(this.surface);
       labelElement.xywh = serializeXYWH(...this.model.labelXYWH);
-      labelElement.index = generateKeyBetween(this.model.index, null);
+      // Validate the model index before using it with generateKeyBetween
+      const validIndex = /^[a-zA-Z]/.test(this.model.index)
+        ? this.model.index
+        : 'a0';
+      labelElement.index = generateKeyBetween(validIndex, null);
 
       if (!curLabelElement) {
         curLabelElement = labelElement;

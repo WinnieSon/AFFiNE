@@ -65,7 +65,10 @@
       "mcp__ide__getDiagnostics",
       "WebFetch(domain:github.com)",
       "Bash(yarn workspace @affine-test/affine-local e2e:*)",
-      "Bash(yarn tsc:*)"
+      "Bash(yarn tsc:*)",
+      "Bash(yarn workspace @blocksuite/integration-test test:*)",
+      "Bash(yarn add:*)",
+      "Bash(yarn workspace @affine/reader:*)"
     ],
     "deny": []
   }

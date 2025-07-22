@@ -763,6 +763,7 @@ __metadata:
   resolution: "@affine/monorepo@workspace:."
   dependencies:
     "@affine-tools/cli": "workspace:*"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.7.4"
     "@capacitor/cli": "npm:^7.0.0"
     "@eslint/js": "npm:^9.16.0"
     "@faker-js/faker": "npm:^9.3.0"
@@ -1487,7 +1488,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop@npm:^1.4.0, @atlaskit/pragmatic-drag-and-drop@npm:^1.6.0":
+"@atlaskit/pragmatic-drag-and-drop@npm:^1.4.0, @atlaskit/pragmatic-drag-and-drop@npm:^1.6.0, @atlaskit/pragmatic-drag-and-drop@npm:^1.7.4":
   version: 1.7.4
   resolution: "@atlaskit/pragmatic-drag-and-drop@npm:1.7.4"
   dependencies:

@@ -1,6 +1,6 @@
 // eslint-disable
 // @ts-nocheck
-import { Node } from './utils/node';
+import { Node } from './utils/node.js';
 
 export const deltaToMd = (delta, converters) => {
   return convert(delta, converters).render().trimEnd() + '\n';

@@ -1,7 +1,7 @@
 // eslint-disable
 // @ts-nocheck
-import { Node } from './utils/node';
-import { encodeLink } from './utils/url';
+import { Node } from './utils/node.js';
+import { encodeLink } from './utils/url.js';
 
 export interface InlineReference {
   type: 'LinkedPage';
