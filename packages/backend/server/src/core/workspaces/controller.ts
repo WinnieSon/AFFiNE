@@ -34,7 +34,6 @@ import { DocID } from '../utils/doc';
 import { CreateDocDto, CreateMeetingDocDto, UpdateDocDto } from './dto';
 import { createMeetingMindMapDocument } from './meeting-note-generator';
 import { OrganizeService } from './organize.service';
-import { SpeakerRenameService } from './speaker-rename.service';
 import type { Tag } from './tag.controller';
 
 @Controller('/api/workspaces')
@@ -50,7 +49,6 @@ export class WorkspacesController {
     private readonly models: Models,
     private readonly event: EventBus,
     private readonly organizeService: OrganizeService,
-    private readonly speakerRenameService: SpeakerRenameService
   ) {}
 
   // get workspace blob
@@ -652,32 +650,6 @@ export class WorkspacesController {
       // Don't throw - this is not critical for document creation
     }
   }
-
-  /**
-   * Check if document title indicates it should be created as mindmap
-   */
-  private isMeetingDocument(title: string): boolean {
-    const meetingKeywords = [
-      '회의',
-      '회의록',
-      '미팅',
-      'meeting',
-      'minutes',
-      'conference',
-      '논의',
-      'discussion',
-      '세미나',
-      'seminar',
-      '워크숍',
-      'workshop',
-    ];
-
-    const lowerTitle = title.toLowerCase();
-    return meetingKeywords.some(keyword =>
-      lowerTitle.includes(keyword.toLowerCase())
-    );
-  }
-
   /**
    * Get random tag color
    */
@@ -775,58 +747,5 @@ export class WorkspacesController {
       [update],
       userId
     );
-  }
-
-  /**
-   * Rename speaker across all documents in workspace
-   *
-   * @warning This operation will update ALL documents in the workspace
-   */
-  @Post('/:id/speaker-rename')
-  @CallMetric('controllers', 'workspace_speaker_rename')
-  async renameSpeaker(
-    @CurrentUser() user: CurrentUser,
-    @Param('id') workspaceId: string,
-    @Body() body: { oldName: string; newName: string; confirmWarning?: boolean }
-  ) {
-    if (!body.oldName || !body.newName) {
-      throw new Error('Both oldName and newName are required');
-    }
-
-    if (body.oldName === body.newName) {
-      throw new Error('Old name and new name cannot be the same');
-    }
-
-    // Require confirmation
-    if (!body.confirmWarning) {
-      return {
-        warning: `This operation will replace all occurrences of "${body.oldName}" with "${body.newName}" in ALL documents in this workspace. This cannot be undone.`,
-        requiresConfirmation: true,
-      };
-    }
-
-    // Check permission - user must be able to create docs (which implies write access)
-    await this.ac
-      .user(user.id)
-      .workspace(workspaceId)
-      .can('Workspace.CreateDoc');
-
-    this.logger.log(
-      `User ${user.id} is renaming speaker "${body.oldName}" to "${body.newName}" in workspace ${workspaceId}`
-    );
-
-    // Perform the rename
-    const result = await this.speakerRenameService.renameSpeakerInWorkspace({
-      workspaceId,
-      oldName: body.oldName,
-      newName: body.newName,
-      userId: user.id,
-    });
-
-    return {
-      success: true,
-      result,
-      message: `Successfully renamed "${body.oldName}" to "${body.newName}" in ${result.updatedDocuments} out of ${result.totalDocuments} documents`,
-    };
   }
 }
