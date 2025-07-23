@@ -335,6 +335,9 @@ export async function createMeetingMindMapDocument(
   pageBlock.set('sys:flavour', 'affine:page');
   pageBlock.set('sys:version', 2);
 
+  // Add to blocks first
+  blocks.set(pageId, pageBlock);
+
   const pageChildren = new Y.Array();
   pageBlock.set('sys:children', pageChildren);
   pageChildren.push([surfaceId, noteId]);
@@ -351,8 +354,6 @@ export async function createMeetingMindMapDocument(
   const titleText = new Y.Text();
   titleText.insert(0, formattedTitle);
   pageBlock.set('prop:title', titleText);
-
-  blocks.set(pageId, pageBlock);
 
   // Create surface block for edgeless mode with empty elements
   const surfaceBlock = new Y.Map();
@@ -1575,19 +1576,20 @@ export async function createMeetingMindMapDocument(
   noteBlock.set('sys:flavour', 'affine:note');
   noteBlock.set('sys:version', 1);
 
+  // Add to blocks first
+  blocks.set(noteId, noteBlock);
+
   // Set children in the correct structure
   const noteChildren = new Y.Array();
+  noteBlock.set('sys:children', noteChildren);
   blockIds.forEach(id => {
     noteChildren.push([id]);
   });
-  noteBlock.set('sys:children', noteChildren);
   noteBlock.set('prop:xywh', '[400,300,800,600]');
   noteBlock.set('prop:background', '--affine-palette-shape-white');
   noteBlock.set('prop:index', 'a0');
   noteBlock.set('prop:hidden', false);
   noteBlock.set('prop:displayMode', 'both');
-
-  blocks.set(noteId, noteBlock);
 
   // Set metadata
   const meta = doc.getMap('meta');
