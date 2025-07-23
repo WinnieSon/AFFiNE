@@ -24,8 +24,8 @@ export default {
     DEPLOYMENT_TYPE: 'affine',
     MAILER_HOST: '0.0.0.0',
     MAILER_PORT: '1025',
-    MAILER_USER: 'noreply@toeverything.info',
+    MAILER_USER: 'support@palcon.ai',
     MAILER_PASSWORD: 'affine',
-    MAILER_SENDER: 'noreply@toeverything.info',
+    MAILER_SENDER: 'support@palcon.ai',
   },
 };

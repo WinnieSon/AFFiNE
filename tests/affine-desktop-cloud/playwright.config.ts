@@ -48,7 +48,7 @@ const config: PlaywrightTestConfig = {
         DEBUG: 'affine:*',
         FORCE_COLOR: 'true',
         DEBUG_COLORS: 'true',
-        MAILER_SENDER: 'noreply@toeverything.info',
+        MAILER_SENDER: 'support@palcon.ai',
       },
       url: 'http://localhost:3010/graphql',
     },

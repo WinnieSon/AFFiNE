@@ -36,6 +36,6 @@ export default function SignUp(props: SignUpProps) {
 }
 
 SignUp.PreviewProps = {
-  url: 'https://palcon.wlab.me/magic-link?token=123456&email=sbson89@gmail.com',
+  url: 'https://app.palcon.ai/magic-link?token=123456&email=sbson89@gmail.com',
   otp: '123456',
 };

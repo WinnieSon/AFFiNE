@@ -214,7 +214,7 @@ export function Template(props: PropsWithChildren) {
           }}
         >
           <Section>
-            <Link href="https://palcon.wlab.me">
+            <Link href="https://app.palcon.ai">
               <Img
                 src="https://raw.githubusercontent.com/WinnieSon/AFFiNE/feature/rec_notice/packages/frontend/core/public/favicon-192.png"
                 alt="Palcon AI logo"

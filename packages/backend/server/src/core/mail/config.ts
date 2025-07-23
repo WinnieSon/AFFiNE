@@ -37,7 +37,7 @@ defineModuleConfig('mailer', {
     env: 'MAILER_PASSWORD',
   },
   'SMTP.sender': {
-    desc: 'Sender of all the emails (e.g. "Palcon AI Team <noreply@palcon.ai>")',
+    desc: 'Sender of all the emails (e.g. "Palcon AI Team <noreply@app.palcon.ai>")',
     default: '',
     env: 'MAILER_SENDER',
   },

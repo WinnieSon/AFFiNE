@@ -214,7 +214,7 @@ const generalErrorText =
 
 const GeneralErrorRenderer = (props: ErrorProps = {}) => {
   const onClick = () => {
-    window.open('mailto:support@toeverything.info', '_blank');
+    window.open('mailto:support@palcon.ai', '_blank');
   };
 
   return html`<ai-error-wrapper
@@ -222,7 +222,7 @@ const GeneralErrorRenderer = (props: ErrorProps = {}) => {
     .errorMessage=${props.errorMessage ?? ''}
     .showDetailPanel=${!!props.errorMessage}
     .actionText=${props.actionText ?? 'Contact us'}
-    .actionTooltip=${props.actionTooltip ?? 'support@toeverything.info'}
+    .actionTooltip=${props.actionTooltip ?? 'support@palcon.ai'}
     .onClick=${onClick}
   ></ai-error-wrapper>`;
 };

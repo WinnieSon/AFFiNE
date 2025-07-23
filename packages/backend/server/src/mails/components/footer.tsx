@@ -27,7 +27,7 @@ export const Footer = () => {
           {['Github', 'Twitter', 'Discord', 'Youtube', 'Reddit'].map(
             platform => (
               <td key={platform} style={{ padding: '0 10px' }}>
-                <Link href={`https://palconai.com/${platform.toLowerCase()}`}>
+                <Link href={`https://app.palcon.ai/${platform.toLowerCase()}`}>
                   <Img
                     src={`https://cdn.affine.pro/mail/2023-8-9/${platform}.png`}
                     alt={`palcon ai ${platform.toLowerCase()} link`}
