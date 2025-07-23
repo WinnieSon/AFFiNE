@@ -336,8 +336,8 @@ export async function createMeetingMindMapDocument(
   pageBlock.set('sys:version', 2);
 
   const pageChildren = new Y.Array();
-  pageChildren.push([surfaceId, noteId]);
   pageBlock.set('sys:children', pageChildren);
+  pageChildren.push([surfaceId, noteId]);
 
   // Set page title with date/time format
   let formattedTitle = '📋';
@@ -1601,6 +1601,8 @@ export async function createMeetingMindMapDocument(
 
   // Create pages metadata
   const pages = new Y.Array();
+  meta.set('pages', pages); // Set pages array to meta first
+  
   const pageMeta = new Y.Map();
   const currentTime = Date.now();
   pageMeta.set('id', pageId);
@@ -1618,7 +1620,6 @@ export async function createMeetingMindMapDocument(
   pageMeta.set('viewport', viewportMeta);
 
   pages.push([pageMeta]);
-  meta.set('pages', pages);
 
   return doc;
 }
