@@ -186,21 +186,27 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
   accessor testId = 'ai-error';
 }
 
-const PaymentRequiredErrorRenderer = (host?: EditorHost | null) => html`
-  <ai-error-wrapper
-    .text=${"You've reached the current usage cap for Palcon AI. You can subscribe to Palcon AI(with free 7-day-trial) to continue the AI experience!"}
-    .actionText=${'Upgrade'}
-    .onClick=${() => AIProvider.slots.requestUpgradePlan.next({ host })}
-  ></ai-error-wrapper>
-`;
+const PaymentRequiredErrorRenderer = (host?: EditorHost | null) => {
+  const t = window.clientGlobals?.i18n?.t || ((key: string) => key);
+  return html`
+    <ai-error-wrapper
+      .text=${t('com.affine.ai.payment-required.text')}
+      .actionText=${t('Upgrade')}
+      .onClick=${() => AIProvider.slots.requestUpgradePlan.next({ host })}
+    ></ai-error-wrapper>
+  `;
+};
 
-const LoginRequiredErrorRenderer = (host?: EditorHost | null) => html`
-  <ai-error-wrapper
-    .text=${'You need to login to Palcon AI to continue using Palcon AI.'}
-    .actionText=${'Login'}
-    .onClick=${() => AIProvider.slots.requestLogin.next({ host })}
-  ></ai-error-wrapper>
-`;
+const LoginRequiredErrorRenderer = (host?: EditorHost | null) => {
+  const t = window.clientGlobals?.i18n?.t || ((key: string) => key);
+  return html`
+    <ai-error-wrapper
+      .text=${t('com.affine.ai.login-required.text')}
+      .actionText=${t('Login')}
+      .onClick=${() => AIProvider.slots.requestLogin.next({ host })}
+    ></ai-error-wrapper>
+  `;
+};
 
 type ErrorProps = {
   text?: string;

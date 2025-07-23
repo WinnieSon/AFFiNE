@@ -180,14 +180,32 @@ export const UserIdentificationEditModal = ({
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (formData.imagesData.length === 0) {
+    // Validate required fields
+    if (!formData.nickname || !formData.speakerId) {
       notify.error({
-        title:
-          t[
-            'com.affine.settings.workspace.user-identification.error.no-image'
-          ](),
+        title: t['com.affine.settings.workspace.user-identification.error.required-fields'](),
       });
       return;
+    }
+
+    // Validate ID format (minimum 8 characters, alphanumeric only)
+    const idRegex = /^[a-zA-Z0-9]{8,}$/;
+    if (!idRegex.test(formData.speakerId)) {
+      notify.error({
+        title: t['com.affine.settings.workspace.user-identification.error.invalid-id'](),
+      });
+      return;
+    }
+
+    // Validate email format if provided
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        notify.error({
+          title: t['com.affine.settings.workspace.user-identification.error.invalid-email'](),
+        });
+        return;
+      }
     }
 
     // Check if nickname is being changed for existing user
@@ -321,6 +339,24 @@ export const UserIdentificationEditModal = ({
   const isLoading =
     createLoading || updateLoading || deleteLoading || bulkReplaceLoading;
 
+  // Validation helper
+  const isFormValid = useCallback(() => {
+    if (!formData.nickname || !formData.speakerId) {
+      return false;
+    }
+    const idRegex = /^[a-zA-Z0-9]{8,}$/;
+    if (!idRegex.test(formData.speakerId)) {
+      return false;
+    }
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        return false;
+      }
+    }
+    return true;
+  }, [formData]);
+
   // Don't render until data is loaded (for edit mode)
   if (!isCreating && dataLoading) {
     return null;
@@ -396,7 +432,8 @@ export const UserIdentificationEditModal = ({
             <label className={styles.label}>
               {t[
                 'com.affine.settings.workspace.user-identification.modal.nickname'
-              ]()}
+              ]()}{' '}
+              <span style={{ color: 'red' }}>*</span>
             </label>
             <Input
               value={formData.nickname}
@@ -451,18 +488,17 @@ export const UserIdentificationEditModal = ({
             <label className={styles.label}>
               {t[
                 'com.affine.settings.workspace.user-identification.modal.speakerId'
-              ]() || 'Speaker ID'}
+              ]()}{' '}
+              <span style={{ color: 'red' }}>*</span>
             </label>
             <Input
               value={formData.speakerId}
               onChange={value =>
                 setFormData(prev => ({ ...prev, speakerId: value }))
               }
-              placeholder={
-                t[
-                  'com.affine.settings.workspace.user-identification.modal.speakerId.placeholder'
-                ]() || 'Enter speaker ID'
-              }
+              placeholder={t[
+                'com.affine.settings.workspace.user-identification.modal.speakerId.placeholder'
+              ]()}
               disabled={isLoading}
             />
           </div>
@@ -491,7 +527,7 @@ export const UserIdentificationEditModal = ({
             onClick={() => {
               handleSave().catch(console.error);
             }}
-            disabled={isLoading || formData.imagesData.length === 0}
+            disabled={isLoading || !isFormValid()}
           >
             {isCreating ? t['Create']() : t['Save']()}
           </Button>
