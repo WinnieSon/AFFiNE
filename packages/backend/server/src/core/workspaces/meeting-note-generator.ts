@@ -1198,30 +1198,35 @@ export async function createMeetingMindMapDocument(
 
     const participantText = new Y.Text();
 
-    // Insert prefix FIRST
-    const prefix = '👥 참석자 : ';
-    participantText.insert(0, prefix);
-
-    // Then add participants
+    // Build the text content with delta operations
+    const delta = [];
+    
+    // Add prefix
+    delta.push({ insert: '👥 참석자 : ' });
+    
+    // Add participants
     data.participants?.forEach((participantId, index) => {
       if (index > 0) {
-        participantText.insert(participantText.length, ', ');
+        delta.push({ insert: ', ' });
       }
 
       // Get mapped participant name
       const participantName =
         globalSpeakerIdToName?.get(participantId) || participantId;
 
-      // Insert participant name
-      const startPos = participantText.length;
-      participantText.insert(startPos, participantName);
-
-      // Apply formatting to the inserted text
-      participantText.format(startPos, participantName.length, {
-        code: true,
-        speakerId: participantId,
+      // Add participant with formatting
+      delta.push({
+        insert: participantName,
+        attributes: {
+          code: true,
+          speakerId: participantId,
+          speakerName: participantName,
+        },
       });
     });
+
+    // Apply all delta operations at once
+    participantText.applyDelta(delta);
 
     participantBlock.set('prop:text', participantText);
     allBlocks[participantBlockId] = participantBlock;
