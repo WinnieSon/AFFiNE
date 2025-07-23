@@ -283,9 +283,10 @@ export async function createMeetingMindMapDocument(
   workspaceId: string,
   prisma?: any
 ): Promise<Y.Doc> {
-  const doc = new Y.Doc();
-  const blocks = doc.getMap('blocks');
-
+  // Define central node position early for viewport calculation
+  const centralNodeX = 1400;
+  const centralNodeY = 400;
+  
   // Create comprehensive speaker mapping for all sections early
   const allSpeakerIds: string[] = [];
 
@@ -318,6 +319,10 @@ export async function createMeetingMindMapDocument(
       prisma
     );
   }
+
+  // Create Y.Doc and wrap all operations in a transaction
+  const doc = new Y.Doc();
+  const blocks = doc.getMap('blocks');
 
   // Create IDs
   const pageId = 'temp-page-id'; // Will be replaced by server
@@ -365,8 +370,6 @@ export async function createMeetingMindMapDocument(
 
   // Create central node for meeting title at a reasonable position
   // We'll set viewport to center on this node
-  const centralNodeX = 1400;
-  const centralNodeY = 400;
   const centralNodeId = generateUniqueId(10);
   const centralNode = createShapeNode({
     id: centralNodeId,
@@ -1149,7 +1152,7 @@ export async function createMeetingMindMapDocument(
 
   // Combine date and time
   if (data.date || data.time) {
-    let dateTimeText = '일시 : ';
+    let dateTimeText = '📅 일시 : ';
     if (data.date) dateTimeText += data.date;
     if (data.time) dateTimeText += ` ${data.time}`;
     meetingInfoItems.push(dateTimeText);
@@ -1196,7 +1199,7 @@ export async function createMeetingMindMapDocument(
     const participantText = new Y.Text();
 
     // Insert prefix FIRST
-    const prefix = '참석자 : ';
+    const prefix = '👥 참석자 : ';
     participantText.insert(0, prefix);
 
     // Then add participants
