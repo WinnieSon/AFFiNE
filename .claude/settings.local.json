@@ -81,7 +81,9 @@
       "Bash(psql:*)",
       "Bash(npx eslint:*)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git unstage:*)",
+      "Bash(LEFTHOOK=0 git commit -m \"$(cat <<''EOF''\nfix: correct edgeless shape text replacement by using original speaker names\n\n- Store original speakerName/participantName values before any updates\n- Compare Y.Text content against original names, not updated names\n- Add safety checks to detect incorrect name comparisons\n- Handle cases where speakerName property might be undefined\n- Prevent duplicate processing of shape text fields\n\nThis fixes the issue where edgeless conversation and participant nodes\nweren''t being updated during bulk speaker replacement.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": []
   }

@@ -363,12 +363,15 @@ export async function createMeetingMindMapDocument(
   // Create Boxed elements structure with mindmap shapes
   const elementsYMap = new Y.Map();
 
-  // Create central node for meeting title (positioned to the right of note)
+  // Create central node for meeting title at a reasonable position
+  // We'll set viewport to center on this node
+  const centralNodeX = 1400;
+  const centralNodeY = 400;
   const centralNodeId = generateUniqueId(10);
   const centralNode = createShapeNode({
     id: centralNodeId,
-    x: 1400, // Moved to the right to avoid overlap with page info
-    y: 400,
+    x: centralNodeX,
+    y: centralNodeY,
     width: 300,
     height: 100,
     text: data.title || '회의록',
@@ -1597,6 +1600,14 @@ export async function createMeetingMindMapDocument(
   pageMeta.set('createDate', currentTime);
   pageMeta.set('updatedDate', currentTime);
   pageMeta.set('tags', new Y.Array());
+  
+  // Set viewport to center on the central node
+  // Calculate center position considering the node's dimensions
+  const viewportMeta = new Y.Map();
+  viewportMeta.set('centerX', centralNodeX + 150); // centerX = nodeX + width/2
+  viewportMeta.set('centerY', centralNodeY + 50);  // centerY = nodeY + height/2
+  viewportMeta.set('zoom', 0.8); // Default zoom level
+  pageMeta.set('viewport', viewportMeta);
 
   pages.push([pageMeta]);
   meta.set('pages', pages);
