@@ -888,10 +888,15 @@ export async function createMeetingMindMapDocument(
         typeof item === 'object' && item.assignee ? item.assignee : [];
 
       // Create display text with assignees if available
-      const displayText =
-        assignees.length > 0
-          ? `${itemText} (담당: ${assignees.join(', ')})`
-          : itemText;
+      let displayText = itemText;
+      if (assignees.length > 0) {
+        // Map assignee IDs to names using globalSpeakerIdToName
+        const assigneeNames = assignees.map(assigneeId => 
+          globalSpeakerIdToName?.get(assigneeId) || assigneeId
+        );
+        // Format: [화자1] 액션 텍스트
+        displayText = `[${assigneeNames.join(', ')}] ${itemText}`;
+      }
 
       const nodeWidth = calculateTextWidth(displayText);
       const nodeHeight = calculateBoxHeight(displayText, nodeWidth);
@@ -911,6 +916,13 @@ export async function createMeetingMindMapDocument(
         textAlign: 'left',
         index: `a${(60 + idx * 2).toString().padStart(4, '0')}`, // a0060, a0062, a0064, etc.
       });
+
+      // Add assignee metadata to the shape for bulk replacement
+      if (assignees.length > 0) {
+        itemNode.set('assignees', assignees);
+        // Store the original action text without assignees for reference
+        itemNode.set('actionText', itemText);
+      }
 
       elementsYMap.set(itemNodeId, itemNode);
 
@@ -1018,8 +1030,8 @@ export async function createMeetingMindMapDocument(
         const originalSpeakerId =
           conversations.length > 0 ? conversations[0].speakerId : speakerName;
 
-        // Create speaker text with code block styling
-        const speakerText = `\`${speakerName}\``; // Wrap in backticks for code styling
+        // Create speaker text without backticks
+        const speakerText = speakerName;
         const speakerWidth = calculateTextWidth(speakerText);
         const speakerHeight = 45;
         speakerY += (conversations.length * conversationSpacing) / 2;

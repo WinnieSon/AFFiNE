@@ -966,33 +966,31 @@ export class BulkDocumentReplacer {
         if (textValue instanceof Y.Text) {
           const textString = textValue.toString();
 
-          // Check for backtick-wrapped speaker patterns
-          const backtickMatch = textString.match(/^`화자\s*(\d+)`$/);
-          if (backtickMatch) {
-            const speakerNum = backtickMatch[1];
+          // Check for speaker patterns (without backticks)
+          const speakerMatch = textString.match(/^화자\s*(\d+)$/);
+          if (speakerMatch) {
+            const speakerNum = speakerMatch[1];
             const newName = speakerMappings[speakerNum];
             if (newName) {
-              const newText = `\`${newName}\``;
               console.log(
-                `[BulkDocumentReplacer] Updating shape text from "${textString}" to "${newText}"`
+                `[BulkDocumentReplacer] Updating shape text from "${textString}" to "${newName}"`
               );
               textValue.delete(0, textValue.length);
-              textValue.insert(0, newText);
+              textValue.insert(0, newName);
               replaced = true;
             }
           }
         } else if (textValue && typeof textValue === 'string') {
           // Check for speaker patterns in string text
-          const match = textValue.match(/^`?화자\s*(\d+)`?$/);
+          const match = textValue.match(/^화자\s*(\d+)$/);
           if (match) {
             const speakerNum = match[1];
             const newName = speakerMappings[speakerNum];
             if (newName) {
-              const newText = `\`${newName}\``;
               console.log(
-                `[BulkDocumentReplacer] Updating shape string text from "${textValue}" to "${newText}"`
+                `[BulkDocumentReplacer] Updating shape string text from "${textValue}" to "${newName}"`
               );
-              item.set('text', newText);
+              item.set('text', newName);
               replaced = true;
             }
           }
@@ -1238,6 +1236,7 @@ export class BulkDocumentReplacer {
         // First check if this Y.Map itself is a shape with speakerId/participantId
         const mapSpeakerId = item.get('speakerId');
         const mapParticipantId = item.get('participantId');
+        const assignees = item.get('assignees');
 
         if (mapSpeakerId === speakerId || mapParticipantId === speakerId) {
           console.log(
@@ -1295,18 +1294,14 @@ export class BulkDocumentReplacer {
               `[BulkDocumentReplacer] Y.Text content: "${textString}"`
             );
 
-            // Check if current name is in backticks
+            // Check if it's the current speaker name or a generic pattern
             const currentName =
               item.get('speakerName') || item.get('participantName');
-            const hasBackticks = textString.match(/^`[^`]+`$/);
+            const isCurrentSpeakerName = textString === currentName;
+            const isGenericSpeaker = textString.match(/^화자\s*\d+$/);
 
-            // Update text if it's the current speaker name wrapped in backticks or a generic pattern
-            const isCurrentSpeakerName =
-              hasBackticks && textString === `\`${currentName}\``;
-            const isGenericSpeaker = textString.match(/^`?화자\s*\d+`?$/);
-
-            if (isGenericSpeaker || isCurrentSpeakerName || hasBackticks) {
-              const newText = `\`${newName}\``;
+            if (isGenericSpeaker || isCurrentSpeakerName) {
+              const newText = newName;
               console.log(
                 `[BulkDocumentReplacer] Updating Y.Text from "${textString}" to "${newText}"`
               );
@@ -1320,18 +1315,21 @@ export class BulkDocumentReplacer {
           else if (textValue && typeof textValue === 'string') {
             console.log(`[BulkDocumentReplacer] Checking text patterns...`);
 
-            // Check if it's a generic speaker pattern
-            const isGenericSpeaker = textValue.match(/^`?화자\s*\d+`?$/);
+            // Check if it's a generic speaker pattern or current name
+            const currentName =
+              item.get('speakerName') || item.get('participantName');
+            const isGenericSpeaker = textValue.match(/^화자\s*\d+$/);
+            const isCurrentSpeakerName = textValue === currentName;
 
-            if (isGenericSpeaker) {
-              const newText = `\`${newName}\``;
+            if (isGenericSpeaker || isCurrentSpeakerName) {
+              const newText = newName;
               console.log(
-                `[BulkDocumentReplacer] Attempting to update generic speaker text from "${textValue}" to "${newText}"`
+                `[BulkDocumentReplacer] Attempting to update speaker text from "${textValue}" to "${newText}"`
               );
               item.set('text', newText);
               replaced = true;
               console.log(
-                `[BulkDocumentReplacer] Successfully updated generic speaker text`
+                `[BulkDocumentReplacer] Successfully updated speaker text`
               );
             } else {
               console.log(
@@ -1342,6 +1340,44 @@ export class BulkDocumentReplacer {
             console.log(
               `[BulkDocumentReplacer] Text value is not a string or Y.Text, it's: ${textValue?.constructor?.name}`
             );
+          }
+        }
+
+        // Check if this is an action item shape with assignees
+        if (assignees && Array.isArray(assignees) && assignees.includes(speakerId)) {
+          console.log(
+            `[BulkDocumentReplacer] Found action item shape with matching assignee at ${path}`
+          );
+          console.log(
+            `[BulkDocumentReplacer] Current assignees: ${assignees.join(', ')}`
+          );
+
+          // Get the original action text
+          const actionText = item.get('actionText') || '';
+          const textValue = item.get('text');
+
+          // Map all assignee IDs to names (update the one we're replacing)
+          const updatedAssigneeNames = assignees.map(assigneeId =>
+            assigneeId === speakerId ? newName : assigneeId
+          );
+
+          // Create updated display text in format: [화자1] 액션 텍스트
+          const updatedDisplayText = `[${updatedAssigneeNames.join(', ')}] ${actionText}`;
+
+          // Update the text field
+          if (textValue instanceof Y.Text) {
+            console.log(
+              `[BulkDocumentReplacer] Updating action item Y.Text from "${textValue.toString()}" to "${updatedDisplayText}"`
+            );
+            textValue.delete(0, textValue.length);
+            textValue.insert(0, updatedDisplayText);
+            replaced = true;
+          } else if (typeof textValue === 'string') {
+            console.log(
+              `[BulkDocumentReplacer] Updating action item text from "${textValue}" to "${updatedDisplayText}"`
+            );
+            item.set('text', updatedDisplayText);
+            replaced = true;
           }
         }
 

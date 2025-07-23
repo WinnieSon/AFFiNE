@@ -79,7 +79,9 @@
       "Bash(npx tsx:*)",
       "Bash(killall:*)",
       "Bash(psql:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ],
     "deny": []
   }
