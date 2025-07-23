@@ -1333,8 +1333,10 @@ export class BulkDocumentReplacer {
             );
 
             // CRITICAL: Use the ORIGINAL names stored before any updates, not current values
+            // If originalSpeakerName/originalParticipantName are undefined but we have a match,
+            // it means the shape didn't have a name property yet
             const nameToCompare =
-              originalSpeakerName || originalParticipantName;
+              originalSpeakerName || originalParticipantName || null;
 
             // Safety check: ensure we're not accidentally using the new name
             if (nameToCompare === newName) {
