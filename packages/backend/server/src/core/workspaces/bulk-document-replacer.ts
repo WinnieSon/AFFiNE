@@ -1186,9 +1186,23 @@ export class BulkDocumentReplacer {
         });
 
         if (hasChanges && newDelta) {
+          // Ensure newDelta is in the correct format for applyDelta
+          const deltaToApply = Array.isArray(delta)
+            ? newDelta
+            : { ops: newDelta };
+
+          console.log(
+            `[BulkDocumentReplacer] Applying delta:`,
+            JSON.stringify(deltaToApply)
+          );
+
           ytext.delete(0, ytext.length);
-          ytext.applyDelta(newDelta);
+          ytext.applyDelta(deltaToApply);
           replaced = true;
+
+          console.log(
+            `[BulkDocumentReplacer] Text after delta apply: "${ytext.toString()}"`
+          );
 
           // Also update block-level speaker metadata if present
           if (parentBlock) {
@@ -1246,13 +1260,33 @@ export class BulkDocumentReplacer {
             `[BulkDocumentReplacer] Shape has speakerId: ${mapSpeakerId}, participantId: ${mapParticipantId}`
           );
 
+          // Store original names before updating - CRITICAL: must be done before any updates
+          const originalSpeakerName =
+            mapSpeakerId === speakerId ? item.get('speakerName') : null;
+          const originalParticipantName =
+            mapParticipantId === speakerId ? item.get('participantName') : null;
+
+          console.log(
+            `[BulkDocumentReplacer] === IMPORTANT: Storing original names BEFORE any updates ===`
+          );
+          console.log(
+            `[BulkDocumentReplacer] Stored original names - speakerName: "${originalSpeakerName}", participantName: "${originalParticipantName}"`
+          );
+          console.log(
+            `[BulkDocumentReplacer] These will be used for text comparison later`
+          );
+
           // Update speaker/participant name
           if (mapSpeakerId === speakerId) {
             const currentSpeakerName = item.get('speakerName');
             console.log(
               `[BulkDocumentReplacer] Current speakerName: ${currentSpeakerName}, new name: ${newName}`
             );
-            if (currentSpeakerName !== newName) {
+            // Only update if the name is different or if speakerName doesn't exist yet
+            if (
+              currentSpeakerName !== newName ||
+              currentSpeakerName === undefined
+            ) {
               item.set('speakerName', newName);
               replaced = true;
               console.log(
@@ -1266,7 +1300,11 @@ export class BulkDocumentReplacer {
             console.log(
               `[BulkDocumentReplacer] Current participantName: ${currentParticipantName}, new name: ${newName}`
             );
-            if (currentParticipantName !== newName) {
+            // Only update if the name is different or if participantName doesn't exist yet
+            if (
+              currentParticipantName !== newName ||
+              currentParticipantName === undefined
+            ) {
               item.set('participantName', newName);
               replaced = true;
               console.log(
@@ -1294,35 +1332,104 @@ export class BulkDocumentReplacer {
               `[BulkDocumentReplacer] Y.Text content: "${textString}"`
             );
 
-            // Check if it's the current speaker name or a generic pattern
-            const currentName =
-              item.get('speakerName') || item.get('participantName');
-            const isCurrentSpeakerName = textString === currentName;
+            // CRITICAL: Use the ORIGINAL names stored before any updates, not current values
+            const nameToCompare =
+              originalSpeakerName || originalParticipantName;
+
+            // Safety check: ensure we're not accidentally using the new name
+            if (nameToCompare === newName) {
+              console.error(
+                `[BulkDocumentReplacer] WARNING: nameToCompare (${nameToCompare}) equals newName (${newName}). This suggests originalName wasn't properly stored!`
+              );
+            }
+
+            const isOriginalSpeakerName =
+              nameToCompare && textString === nameToCompare;
+            const isOriginalSpeakerNameWithBackticks =
+              nameToCompare && textString === `\`${nameToCompare}\``;
             const isGenericSpeaker = textString.match(/^화자\s*\d+$/);
 
-            if (isGenericSpeaker || isCurrentSpeakerName) {
-              const newText = newName;
+            // Additional check: if nameToCompare is undefined but we have a speakerId/participantId match,
+            // check if the text content is a plain speaker name (not empty and not a URL)
+            const isSpeakerNameText =
+              !nameToCompare &&
+              textString &&
+              !textString.startsWith('http') &&
+              !textString.includes('\n') &&
+              textString.trim().length > 0;
+
+            console.log(
+              `[BulkDocumentReplacer] Checking conditions - originalName: "${nameToCompare}" (NOT the updated name!), textString: "${textString}", isOriginalSpeakerName: ${isOriginalSpeakerName}, isOriginalSpeakerNameWithBackticks: ${isOriginalSpeakerNameWithBackticks}, isGenericSpeaker: ${isGenericSpeaker}, isSpeakerNameText: ${isSpeakerNameText}`
+            );
+
+            if (
+              isGenericSpeaker ||
+              isOriginalSpeakerName ||
+              isOriginalSpeakerNameWithBackticks ||
+              isSpeakerNameText
+            ) {
+              // Preserve backticks if they exist
+              const newText = isOriginalSpeakerNameWithBackticks
+                ? `\`${newName}\``
+                : newName;
               console.log(
                 `[BulkDocumentReplacer] Updating Y.Text from "${textString}" to "${newText}"`
               );
-              textValue.delete(0, textValue.length);
-              textValue.insert(0, newText);
-              replaced = true;
-              console.log(`[BulkDocumentReplacer] Successfully updated Y.Text`);
+
+              // Use simple insert to avoid delta complexity
+              try {
+                console.log(
+                  `[BulkDocumentReplacer] Using simple insert method`
+                );
+                textValue.delete(0, textValue.length);
+                textValue.insert(0, newText);
+                replaced = true;
+
+                console.log(
+                  `[BulkDocumentReplacer] Successfully updated Y.Text to: "${textValue.toString()}"`
+                );
+              } catch (e) {
+                console.error(
+                  `[BulkDocumentReplacer] Failed to update Y.Text:`,
+                  e
+                );
+              }
             }
           }
           // Handle string instance
           else if (textValue && typeof textValue === 'string') {
             console.log(`[BulkDocumentReplacer] Checking text patterns...`);
 
-            // Check if it's a generic speaker pattern or current name
-            const currentName =
-              item.get('speakerName') || item.get('participantName');
-            const isGenericSpeaker = textValue.match(/^화자\s*\d+$/);
-            const isCurrentSpeakerName = textValue === currentName;
+            // CRITICAL: Use the ORIGINAL names stored before any updates
+            const nameToCompare =
+              originalSpeakerName || originalParticipantName;
 
-            if (isGenericSpeaker || isCurrentSpeakerName) {
-              const newText = newName;
+            // Safety check: ensure we're not accidentally using the new name
+            if (nameToCompare === newName) {
+              console.error(
+                `[BulkDocumentReplacer] WARNING: String text comparison using newName instead of originalName!`
+              );
+            }
+
+            const isGenericSpeaker = textValue.match(/^화자\s*\d+$/);
+            const isOriginalSpeakerName =
+              nameToCompare && textValue === nameToCompare;
+            const isOriginalSpeakerNameWithBackticks =
+              nameToCompare && textValue === `\`${nameToCompare}\``;
+
+            console.log(
+              `[BulkDocumentReplacer] String text check - originalName: "${nameToCompare}" (NOT the updated name!), isOriginalSpeakerName: ${isOriginalSpeakerName}, isOriginalSpeakerNameWithBackticks: ${isOriginalSpeakerNameWithBackticks}`
+            );
+
+            if (
+              isGenericSpeaker ||
+              isOriginalSpeakerName ||
+              isOriginalSpeakerNameWithBackticks
+            ) {
+              // Preserve backticks if they exist
+              const newText = isOriginalSpeakerNameWithBackticks
+                ? `\`${newName}\``
+                : newName;
               console.log(
                 `[BulkDocumentReplacer] Attempting to update speaker text from "${textValue}" to "${newText}"`
               );
@@ -1344,7 +1451,11 @@ export class BulkDocumentReplacer {
         }
 
         // Check if this is an action item shape with assignees
-        if (assignees && Array.isArray(assignees) && assignees.includes(speakerId)) {
+        if (
+          assignees &&
+          Array.isArray(assignees) &&
+          assignees.includes(speakerId)
+        ) {
           console.log(
             `[BulkDocumentReplacer] Found action item shape with matching assignee at ${path}`
           );
@@ -1434,21 +1545,18 @@ export class BulkDocumentReplacer {
                     `[BulkDocumentReplacer] Replacing table cell text from "${textContent}" to "${newName}"`
                   );
 
-                  // Apply delta to maintain code block formatting
-                  const newDelta = [
-                    {
-                      insert: newName,
-                      attributes: {
-                        code: true,
-                        speakerId: cellSpeakerId,
-                        speakerName: newName,
-                      },
-                    },
-                  ];
-
+                  // Delete old content and insert new with attributes
                   value.delete(0, value.length);
-                  value.applyDelta(newDelta);
+                  value.insert(0, newName, {
+                    code: true,
+                    speakerId: cellSpeakerId,
+                    speakerName: newName,
+                  });
                   replaced = true;
+
+                  console.log(
+                    `[BulkDocumentReplacer] Table cell text after replacement: "${value.toString()}"`
+                  );
                 }
 
                 // Then update speaker name metadata
@@ -1471,8 +1579,12 @@ export class BulkDocumentReplacer {
               replaceInYText(value, item, true);
             }
           }
-          // Handle mindmap shape text
-          else if (key === 'text' && value instanceof Y.Text) {
+          // Handle mindmap shape text (only if not already processed at shape level)
+          else if (
+            key === 'text' &&
+            value instanceof Y.Text &&
+            !(mapSpeakerId === speakerId || mapParticipantId === speakerId)
+          ) {
             console.log(`[BulkDocumentReplacer] Found Y.Text at ${newPath}`);
             replaceInYText(value, item);
           } else {
