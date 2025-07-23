@@ -18,6 +18,7 @@ export interface UserIdentification {
   nickname?: string | null;
   title?: string | null;
   email?: string | null;
+  speakerId?: string | null;
   imagesData: string[];
   imageData?: string | null;
   imageType?: string | null;
@@ -70,6 +71,7 @@ export const useCreateUserIdentification = () => {
       nickname?: string | null;
       title?: string | null;
       email?: string | null;
+      speakerId?: string | null;
       imagesData: string[];
     }) => {
       const result = await trigger({ input });
@@ -93,6 +95,7 @@ export const useUpdateUserIdentification = () => {
       nickname?: string | null;
       title?: string | null;
       email?: string | null;
+      speakerId?: string | null;
       imagesData?: string[];
     }) => {
       const result = await trigger({ input });
@@ -132,6 +135,7 @@ export const useUpdateUserIdentificationWithBulkReplace = () => {
       nickname?: string | null;
       title?: string | null;
       email?: string | null;
+      speakerId?: string | null;
       imagesData?: string[];
     }) => {
       const result = await trigger({ input });

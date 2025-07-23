@@ -1,5 +1,72 @@
 import * as Y from 'yjs';
 
+// Helper function to get speaker names from User Identification
+async function getSpeakerMappings(
+  workspaceId: string,
+  speakerIds: string[],
+  prisma?: any
+): Promise<Map<string, string>> {
+  const speakerMap = new Map<string, string>();
+
+  if (!prisma) {
+    // Fallback to sequential naming if no Prisma client
+    speakerIds.forEach((id, index) => {
+      speakerMap.set(id, `화자 ${index + 1}`);
+    });
+    return speakerMap;
+  }
+
+  try {
+    // Get user identifications that have speakerId matching our speakers
+    const userIdentifications = await prisma.userIdentification.findMany({
+      where: {
+        workspaceId,
+        speakerId: {
+          in: speakerIds,
+        },
+      },
+      select: {
+        speakerId: true,
+        nickname: true,
+      },
+    });
+
+    // Create map from registered speakers
+    const registeredSpeakers = new Map<string, string>();
+    userIdentifications.forEach((ui: any) => {
+      if (ui.speakerId && ui.nickname) {
+        registeredSpeakers.set(ui.speakerId, ui.nickname);
+      }
+    });
+
+    // Map speakers: use registered name if available, otherwise use sequential naming
+    let sequentialIndex = 1;
+    speakerIds.forEach(speakerId => {
+      if (registeredSpeakers.has(speakerId)) {
+        const name = registeredSpeakers.get(speakerId);
+        if (name) {
+          speakerMap.set(speakerId, name);
+        } else {
+          speakerMap.set(speakerId, `화자 ${sequentialIndex}`);
+          sequentialIndex++;
+        }
+      } else {
+        speakerMap.set(speakerId, `화자 ${sequentialIndex}`);
+        sequentialIndex++;
+      }
+    });
+
+    return speakerMap;
+  } catch (error) {
+    console.error('Error fetching speaker mappings:', error);
+    // Fallback to sequential naming on error
+    speakerIds.forEach((id, index) => {
+      speakerMap.set(id, `화자 ${index + 1}`);
+    });
+    return speakerMap;
+  }
+}
+
 interface MeetingNoteData {
   title?: string;
   date?: string;
@@ -9,7 +76,13 @@ interface MeetingNoteData {
   tags?: string[];
   agenda?: string[];
   summary?: Array<string | { [agenda: string]: string[] }>;
-  action?: string[];
+  action?: Array<
+    | string
+    | {
+        assignee?: string[];
+        text: string;
+      }
+  >;
   conversation?: Array<{
     speaker: string;
     text: string;
@@ -205,9 +278,46 @@ function createDividerBlock(id: string): Y.Map<any> {
 }
 
 // Create meeting note document with basic structure for edgeless mode
-export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
+export async function createMeetingMindMapDocument(
+  data: MeetingNoteData,
+  workspaceId: string,
+  prisma?: any
+): Promise<Y.Doc> {
   const doc = new Y.Doc();
   const blocks = doc.getMap('blocks');
+
+  // Create comprehensive speaker mapping for all sections early
+  const allSpeakerIds: string[] = [];
+
+  // Collect speaker IDs from participants
+  if (data.participants) {
+    allSpeakerIds.push(...data.participants);
+  }
+
+  // Collect speaker IDs from action items
+  if (data.action) {
+    data.action.forEach(item => {
+      if (typeof item === 'object' && item.assignee) {
+        allSpeakerIds.push(...item.assignee);
+      }
+    });
+  }
+
+  // Collect speaker IDs from conversations
+  if (data.conversation) {
+    allSpeakerIds.push(...data.conversation.map(conv => conv.speaker));
+  }
+
+  // Create unified speaker mapping
+  let globalSpeakerIdToName: Map<string, string> | null = null;
+  if (allSpeakerIds.length > 0) {
+    const uniqueSpeakerIds = Array.from(new Set(allSpeakerIds));
+    globalSpeakerIdToName = await getSpeakerMappings(
+      workspaceId,
+      uniqueSpeakerIds,
+      prisma
+    );
+  }
 
   // Create IDs
   const pageId = 'temp-page-id'; // Will be replaced by server
@@ -515,7 +625,10 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       Math.floor(((data.participants.length - 1) * participantSpacing) / 2);
 
     data.participants.forEach((participant, idx) => {
-      const nodeWidth = calculateTextWidth(participant);
+      // Use mapped participant name or fallback to original ID
+      const participantName =
+        globalSpeakerIdToName?.get(participant) || participant;
+      const nodeWidth = calculateTextWidth(participantName);
       const nodeHeight = 40;
 
       const participantNodeId = generateUniqueId(10);
@@ -525,12 +638,16 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         y: participantY,
         width: nodeWidth,
         height: nodeHeight,
-        text: participant,
+        text: participantName,
         fillColor: '--affine-palette-shape-white',
         strokeColor: '--affine-palette-line-grey',
         index: `a${(30 + idx * 2).toString().padStart(4, '0')}`, // a0030, a0032, a0034, etc.
         textAlign: 'left',
       });
+
+      // Add speaker metadata (using speakerId/speakerName for consistency)
+      participantNode.set('speakerId', participant);
+      participantNode.set('speakerName', participantName);
 
       elementsYMap.set(participantNodeId, participantNode);
 
@@ -765,9 +882,19 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       Math.floor(((data.action.length - 1) * actionSpacing) / 2);
 
     data.action.forEach((item, idx) => {
-      const itemText = item;
-      const nodeWidth = calculateTextWidth(itemText);
-      const nodeHeight = calculateBoxHeight(itemText, nodeWidth);
+      // Handle both old string format and new object format
+      const itemText = typeof item === 'string' ? item : item.text;
+      const assignees =
+        typeof item === 'object' && item.assignee ? item.assignee : [];
+
+      // Create display text with assignees if available
+      const displayText =
+        assignees.length > 0
+          ? `${itemText} (담당: ${assignees.join(', ')})`
+          : itemText;
+
+      const nodeWidth = calculateTextWidth(displayText);
+      const nodeHeight = calculateBoxHeight(displayText, nodeWidth);
 
       const itemNodeId = generateUniqueId(10);
       const itemNode = createShapeNode({
@@ -776,7 +903,7 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         y: actionY,
         width: nodeWidth,
         height: nodeHeight,
-        text: itemText,
+        text: displayText,
         fillColor: '--affine-palette-shape-white',
         strokeColor: '--affine-palette-line-red',
         strokeWidth: 1,
@@ -818,13 +945,28 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
 
     // Only proceed if there are conversations left after filtering
     if (filteredConversations.length > 0) {
-      // Group conversations by speaker
+      // Create speaker ID to name mapping using database lookups
+      const uniqueSpeakers = Array.from(
+        new Set(filteredConversations.map(conv => conv.speaker))
+      );
+      const speakerIdToName = await getSpeakerMappings(
+        workspaceId,
+        uniqueSpeakers,
+        prisma
+      );
+
+      // Group conversations by speaker name (not ID)
       const speakerGroups = new Map();
       filteredConversations.forEach(conv => {
-        if (!speakerGroups.has(conv.speaker)) {
-          speakerGroups.set(conv.speaker, []);
+        const speakerName = speakerIdToName.get(conv.speaker) || conv.speaker;
+        if (!speakerGroups.has(speakerName)) {
+          speakerGroups.set(speakerName, []);
         }
-        speakerGroups.get(conv.speaker).push(conv);
+        speakerGroups.get(speakerName).push({
+          ...conv,
+          speakerId: conv.speaker,
+          speakerName: speakerName,
+        });
       });
 
       // Add speaker nodes and their conversations
@@ -868,10 +1010,16 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
 
       elementsYMap.set(conversationConnectorId, conversationConnector);
       let speakerY = endHeight;
-      speakerGroups.forEach((conversations, speaker) => {
+      speakerGroups.forEach((conversations, speakerName) => {
         // Create speaker node
         const speakerNodeId = generateUniqueId(10);
-        const speakerText = `화자: ${speaker}`;
+
+        // Get the original speaker ID from the first conversation
+        const originalSpeakerId =
+          conversations.length > 0 ? conversations[0].speakerId : speakerName;
+
+        // Create speaker text with code block styling
+        const speakerText = `\`${speakerName}\``; // Wrap in backticks for code styling
         const speakerWidth = calculateTextWidth(speakerText);
         const speakerHeight = 45;
         speakerY += (conversations.length * conversationSpacing) / 2;
@@ -890,6 +1038,10 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
           textAlign: 'center',
           index: `a${(70 + speakerIdx * 2).toString().padStart(4, '0')}`, // a0070, a0072, a0074, etc.
         });
+
+        // Add speaker metadata as custom properties
+        speakerNode.set('speakerId', originalSpeakerId);
+        speakerNode.set('speakerName', speakerName);
 
         elementsYMap.set(speakerNodeId, speakerNode);
 
@@ -993,21 +1145,73 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
     meetingInfoItems.push(`장소 : ${data.location}`);
   }
 
-  // Participants - inline format
-  if (data.participants && data.participants.length > 0) {
-    meetingInfoItems.push(`참석자 : ${data.participants.join(', ')}`);
-  }
+  // Participants - will be handled separately with code block format
+  let hasParticipants = data.participants && data.participants.length > 0;
 
-  // Add meeting info as separate paragraphs
+  // Add meeting info as separate paragraphs with enhanced formatting
   meetingInfoItems.forEach(item => {
     const itemId = generateUniqueId(10);
-    const itemBlock = createParagraphBlock(itemId, item, 'text');
+    const itemBlock = new Y.Map();
+    itemBlock.set('sys:id', itemId);
+    itemBlock.set('sys:flavour', 'affine:paragraph');
+    itemBlock.set('sys:version', 1);
+    itemBlock.set('sys:children', new Y.Array());
+    itemBlock.set('prop:type', 'text');
+
+    const itemText = new Y.Text();
+
+    // Regular text item
+    itemText.insert(0, item);
+
+    itemBlock.set('prop:text', itemText);
     allBlocks[itemId] = itemBlock;
     blockIds.push(itemId);
   });
 
+  // Add participants section with code block formatting
+  if (hasParticipants) {
+    const participantBlockId = generateUniqueId(10);
+    const participantBlock = new Y.Map();
+    participantBlock.set('sys:id', participantBlockId);
+    participantBlock.set('sys:flavour', 'affine:paragraph');
+    participantBlock.set('sys:version', 1);
+    participantBlock.set('sys:children', new Y.Array());
+    participantBlock.set('prop:type', 'text');
+
+    const participantText = new Y.Text();
+
+    // Insert prefix FIRST
+    const prefix = '참석자 : ';
+    participantText.insert(0, prefix);
+
+    // Then add participants
+    data.participants?.forEach((participantId, index) => {
+      if (index > 0) {
+        participantText.insert(participantText.length, ', ');
+      }
+
+      // Get mapped participant name
+      const participantName =
+        globalSpeakerIdToName?.get(participantId) || participantId;
+
+      // Insert participant name
+      const startPos = participantText.length;
+      participantText.insert(startPos, participantName);
+
+      // Apply formatting to the inserted text
+      participantText.format(startPos, participantName.length, {
+        code: true,
+        speakerId: participantId,
+      });
+    });
+
+    participantBlock.set('prop:text', participantText);
+    allBlocks[participantBlockId] = participantBlock;
+    blockIds.push(participantBlockId);
+  }
+
   // Add divider after meeting info
-  if (meetingInfoItems.length > 0) {
+  if (meetingInfoItems.length > 0 || hasParticipants) {
     const dividerId1 = generateUniqueId(10);
     allBlocks[dividerId1] = createDividerBlock(dividerId1);
     blockIds.push(dividerId1);
@@ -1154,7 +1358,41 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
       itemBlock.set('prop:checked', false);
 
       const itemText = new Y.Text();
-      itemText.insert(0, item);
+      // Handle both old string format and new object format
+      const actionText = typeof item === 'string' ? item : item.text;
+      const assignees =
+        typeof item === 'object' && item.assignee ? item.assignee : [];
+
+      // Insert action text first
+      itemText.insert(0, actionText);
+
+      // Add assignees with code block formatting if available
+      if (assignees.length > 0) {
+        assignees.forEach((assigneeId, index) => {
+          // Get speaker name from global mapping
+          const assigneeName =
+            globalSpeakerIdToName?.get(assigneeId) || assigneeId;
+
+          if (index === 0) {
+            itemText.insert(itemText.length, ' ');
+          } else {
+            itemText.insert(itemText.length, ', ');
+          }
+
+          // Insert assignee with code block styling and metadata
+          const assigneeDelta = [
+            {
+              insert: assigneeName,
+              attributes: {
+                code: true,
+                speakerId: assigneeId,
+              },
+            },
+          ];
+
+          itemText.applyDelta(assigneeDelta);
+        });
+      }
       itemBlock.set('prop:text', itemText);
 
       allBlocks[itemId] = itemBlock;
@@ -1162,8 +1400,10 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
     });
   }
 
-  // Conversation section
+  // Conversation section with speaker ID mapping
   if (data.conversation && data.conversation.length > 0) {
+    // Use global speaker mapping
+    const speakerIdToName = globalSpeakerIdToName || new Map<string, string>();
     // Add divider
     const dividerId3 = generateUniqueId(10);
     allBlocks[dividerId3] = createDividerBlock(dividerId3);
@@ -1188,48 +1428,48 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
     tableBlock.set('sys:version', 1);
     tableBlock.set('sys:children', new Y.Array());
 
-    // Create column IDs
-    const timeColId = generateUniqueId(10);
+    // Create column IDs - reorder: speaker first, then time, then content
     const speakerColId = generateUniqueId(10);
+    const timeColId = generateUniqueId(10);
     const contentColId = generateUniqueId(10);
 
-    // Add columns metadata with width
-    tableBlock.set(`prop:columns.${timeColId}.columnId`, timeColId);
-    tableBlock.set(`prop:columns.${timeColId}.order`, generateOrderString(0));
-    tableBlock.set(`prop:columns.${timeColId}.width`, 80); // 시간 열 좁게
-
+    // Add columns metadata with width - speaker column first
     tableBlock.set(`prop:columns.${speakerColId}.columnId`, speakerColId);
     tableBlock.set(
       `prop:columns.${speakerColId}.order`,
-      generateOrderString(1)
+      generateOrderString(0)
     );
-    tableBlock.set(`prop:columns.${speakerColId}.width`, 100); // 화자 열 중간
+    tableBlock.set(`prop:columns.${speakerColId}.width`, 100); // 화자 열 첫 번째
+
+    tableBlock.set(`prop:columns.${timeColId}.columnId`, timeColId);
+    tableBlock.set(`prop:columns.${timeColId}.order`, generateOrderString(1));
+    tableBlock.set(`prop:columns.${timeColId}.width`, 80); // 시간 열 두 번째
 
     tableBlock.set(`prop:columns.${contentColId}.columnId`, contentColId);
     tableBlock.set(
       `prop:columns.${contentColId}.order`,
       generateOrderString(2)
     );
-    tableBlock.set(`prop:columns.${contentColId}.width`, 500); // 발화내용 열 크게
+    tableBlock.set(`prop:columns.${contentColId}.width`, 500); // 발화내용 열 세 번째
 
     // Create rows - header + data rows
     const headerRowId = generateUniqueId(10);
     tableBlock.set(`prop:rows.${headerRowId}.rowId`, headerRowId);
     tableBlock.set(`prop:rows.${headerRowId}.order`, generateOrderString(0));
 
-    // Header cells
-    const headerTimeText = new Y.Text();
-    headerTimeText.insert(0, '시간');
-    tableBlock.set(
-      `prop:cells.${headerRowId}:${timeColId}.text`,
-      headerTimeText
-    );
-
+    // Header cells - reorder: speaker first, then time, then content
     const headerSpeakerText = new Y.Text();
     headerSpeakerText.insert(0, '화자');
     tableBlock.set(
       `prop:cells.${headerRowId}:${speakerColId}.text`,
       headerSpeakerText
+    );
+
+    const headerTimeText = new Y.Text();
+    headerTimeText.insert(0, '시간');
+    tableBlock.set(
+      `prop:cells.${headerRowId}:${timeColId}.text`,
+      headerTimeText
     );
 
     const headerContentText = new Y.Text();
@@ -1257,17 +1497,41 @@ export function createMeetingMindMapDocument(data: MeetingNoteData): Y.Doc {
         generateOrderString(index + 1)
       );
 
-      // Time cell
+      // Speaker cell first - with code block format and ID attributes
+      const speakerName = speakerIdToName.get(conv.speaker) || conv.speaker;
+      const speakerText = new Y.Text();
+
+      // Create delta with code block styling and speaker ID attributes
+      const speakerDelta = [
+        {
+          insert: speakerName,
+          attributes: {
+            code: true,
+            speakerId: conv.speaker,
+            speakerName: speakerName, // Add speaker name as attribute too
+          },
+        },
+      ];
+
+      speakerText.applyDelta(speakerDelta);
+      tableBlock.set(`prop:cells.${rowId}:${speakerColId}.text`, speakerText);
+
+      // Also store speaker metadata at cell level for easier access
+      tableBlock.set(
+        `prop:cells.${rowId}:${speakerColId}.speakerId`,
+        conv.speaker
+      );
+      tableBlock.set(
+        `prop:cells.${rowId}:${speakerColId}.speakerName`,
+        speakerName
+      );
+
+      // Time cell second
       const timeText = new Y.Text();
       timeText.insert(0, conv.time);
       tableBlock.set(`prop:cells.${rowId}:${timeColId}.text`, timeText);
 
-      // Speaker cell
-      const speakerText = new Y.Text();
-      speakerText.insert(0, conv.speaker);
-      tableBlock.set(`prop:cells.${rowId}:${speakerColId}.text`, speakerText);
-
-      // Content cell
+      // Content cell third
       const contentText = new Y.Text();
       contentText.insert(0, conv.text);
       tableBlock.set(`prop:cells.${rowId}:${contentColId}.text`, contentText);

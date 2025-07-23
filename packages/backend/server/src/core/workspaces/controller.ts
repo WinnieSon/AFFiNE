@@ -4,6 +4,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Logger,
   Param,
   Post,
@@ -11,6 +12,8 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
+import { TransactionHost } from '@nestjs-cls/transactional';
+import type { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import type { Response } from 'express';
 import { nanoid } from 'nanoid';
 import * as Y from 'yjs';
@@ -31,6 +34,7 @@ import { DocReader } from '../doc/reader';
 import { AccessController } from '../permission';
 import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
+import { BulkDocumentReplacer } from './bulk-document-replacer';
 import { CreateDocDto, CreateMeetingDocDto, UpdateDocDto } from './dto';
 import { createMeetingMindMapDocument } from './meeting-note-generator';
 import { OrganizeService } from './organize.service';
@@ -48,8 +52,15 @@ export class WorkspacesController {
     private readonly docReader: DocReader,
     private readonly models: Models,
     private readonly event: EventBus,
-    private readonly organizeService: OrganizeService,
+    private readonly organizeService: OrganizeService
   ) {}
+
+  @Inject(TransactionHost)
+  private readonly txHost!: TransactionHost<TransactionalAdapterPrisma>;
+
+  private get prisma() {
+    return this.txHost.tx;
+  }
 
   // get workspace blob
   //
@@ -414,7 +425,11 @@ export class WorkspacesController {
       formattedTitle += body.title || '회의록';
 
       // Create meeting note document structure
-      const meetingDoc = createMeetingMindMapDocument(body);
+      const meetingDoc = await createMeetingMindMapDocument(
+        body,
+        workspaceId,
+        this.prisma
+      );
       const content = Y.encodeStateAsUpdate(meetingDoc);
 
       this.logger.log(
@@ -556,6 +571,90 @@ export class WorkspacesController {
       } else {
         return res.status(500).json({ error: 'Failed to update document' });
       }
+    }
+  }
+
+  // Bulk replace speaker names in workspace documents
+  @Post('/:id/docs/bulk-replace-by-speaker-id')
+  @CallMetric('controllers', 'workspace_bulk_replace_by_speaker_id')
+  async bulkReplaceBySpeakerId(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Body() body: { speakerId: string; newName: string },
+    @Res() res: Response
+  ) {
+    // Check workspace write permission
+    await this.ac
+      .user(user.id)
+      .workspace(workspaceId)
+      .assert('Workspace.CreateDoc'); // Use CreateDoc permission since Update doesn't exist
+
+    if (!body.speakerId || !body.newName) {
+      return res
+        .status(400)
+        .json({ error: 'speakerId and newName are required' });
+    }
+
+    try {
+      const replacer = new BulkDocumentReplacer(this.prisma as any);
+      await replacer.replaceInWorkspaceBySpeakerId(
+        workspaceId,
+        body.speakerId,
+        body.newName
+      );
+
+      return res.json({
+        success: true,
+        workspaceId,
+        speakerId: body.speakerId,
+        newName: body.newName,
+        updatedBy: user.id,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      this.logger.error(`Failed to bulk replace speaker names: ${error}`);
+      return res
+        .status(500)
+        .json({ error: 'Failed to bulk replace speaker names' });
+    }
+  }
+
+  // TEST ENDPOINT - Remove this after testing
+  @Public()
+  @Post('/:id/docs/bulk-replace-test')
+  async bulkReplaceTest(
+    @Param('id') workspaceId: string,
+    @Body() body: { speakerId: string; newName: string },
+    @Res() res: Response
+  ) {
+    this.logger.log(`TEST: Bulk replace in workspace ${workspaceId}`);
+
+    if (!body.speakerId || !body.newName) {
+      return res
+        .status(400)
+        .json({ error: 'speakerId and newName are required' });
+    }
+
+    try {
+      const replacer = new BulkDocumentReplacer(this.prisma as any);
+      await replacer.replaceInWorkspaceBySpeakerId(
+        workspaceId,
+        body.speakerId,
+        body.newName
+      );
+
+      return res.json({
+        success: true,
+        workspaceId,
+        speakerId: body.speakerId,
+        newName: body.newName,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      this.logger.error(`TEST: Failed to bulk replace: ${error}`);
+      return res
+        .status(500)
+        .json({ error: 'Failed to bulk replace speaker names' });
     }
   }
 

@@ -943,6 +943,7 @@ model UserIdentification {
   nickname    String?  @db.VarChar
   title       String?  @db.VarChar
   email       String?  @db.VarChar
+  speakerId   String?  @map("speaker_id") @db.VarChar
   // Image data stored as base64 or binary (legacy single image)
   imageData   String?  @map("image_data") @db.Text
   imageType   String?  @default("image/jpeg") @map("image_type") @db.VarChar

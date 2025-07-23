@@ -9,6 +9,7 @@ export const userIdentificationsQuery = {
       nickname
       title
       email
+      speakerId
       imagesData
       imageData
       imageType
@@ -29,6 +30,7 @@ export const userIdentificationQuery = {
       nickname
       title
       email
+      speakerId
       imagesData
       imageData
       imageType
@@ -49,6 +51,7 @@ export const createUserIdentificationMutation = {
       nickname
       title
       email
+      speakerId
       imagesData
       createdAt
       updatedAt
@@ -67,6 +70,7 @@ export const updateUserIdentificationMutation = {
       nickname
       title
       email
+      speakerId
       imagesData
       createdAt
       updatedAt
@@ -93,6 +97,7 @@ export const updateUserIdentificationWithBulkReplaceMutation = {
       nickname
       title
       email
+      speakerId
       imagesData
       createdAt
       updatedAt

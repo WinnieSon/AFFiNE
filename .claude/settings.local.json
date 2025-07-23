@@ -68,7 +68,18 @@
       "Bash(yarn tsc:*)",
       "Bash(yarn workspace @blocksuite/integration-test test:*)",
       "Bash(yarn add:*)",
-      "Bash(yarn workspace @affine/reader:*)"
+      "Bash(yarn workspace @affine/reader:*)",
+      "Bash(tsc:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npm run dev:*)",
+      "Bash(yarn tsx:*)",
+      "Bash(npx tsx:*)",
+      "Bash(killall:*)",
+      "Bash(psql:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": []
   }

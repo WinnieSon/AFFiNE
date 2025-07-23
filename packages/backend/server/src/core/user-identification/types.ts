@@ -23,6 +23,9 @@ export class UserIdentificationType {
   @Field(() => String, { nullable: true })
   email?: string | null;
 
+  @Field(() => String, { nullable: true })
+  speakerId?: string | null;
+
   @Field(() => [String])
   imagesData!: string[];
 
@@ -63,6 +66,9 @@ export class CreateUserIdentificationInput {
   @Field(() => String, { nullable: true })
   email?: string | null;
 
+  @Field(() => String, { nullable: true })
+  speakerId?: string | null;
+
   @Field(() => [String])
   imagesData!: string[];
 }
@@ -83,6 +89,9 @@ export class UpdateUserIdentificationInput {
 
   @Field(() => String, { nullable: true })
   email?: string | null;
+
+  @Field(() => String, { nullable: true })
+  speakerId?: string | null;
 
   @Field(() => [String], { nullable: true })
   imagesData?: string[];

@@ -1,6 +1,6 @@
 import { Button, Input, Modal, notify } from '@affine/component';
 import { useI18n } from '@affine/i18n';
-import { DeleteIcon, ImageIcon, PlusIcon } from '@blocksuite/icons/rc';
+import { DeleteIcon, PlusIcon } from '@blocksuite/icons/rc';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import * as styles from './edit-modal.css';
@@ -42,6 +42,7 @@ export const UserIdentificationEditModal = ({
     nickname: '',
     title: '',
     email: '',
+    speakerId: '',
     imagesData: [] as string[],
   });
   const [showBulkReplaceDialog, setShowBulkReplaceDialog] = useState(false);
@@ -56,6 +57,7 @@ export const UserIdentificationEditModal = ({
         nickname: '',
         title: '',
         email: '',
+        speakerId: '',
         imagesData: [],
       });
     }
@@ -63,7 +65,7 @@ export const UserIdentificationEditModal = ({
 
   useEffect(() => {
     if (!isCreating && existingData?.userIdentification) {
-      const { nickname, title, email, imagesData, imageData } =
+      const { nickname, title, email, speakerId, imagesData, imageData } =
         existingData.userIdentification;
 
       // Handle both new format (imagesData) and legacy format (imageData)
@@ -79,6 +81,7 @@ export const UserIdentificationEditModal = ({
         nickname: nickname || '',
         title: title || '',
         email: email || '',
+        speakerId: speakerId || '',
         imagesData: images,
       });
     }
@@ -440,6 +443,26 @@ export const UserIdentificationEditModal = ({
                 'com.affine.settings.workspace.user-identification.modal.email.placeholder'
               ]()}
               type="email"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className={styles.formField}>
+            <label className={styles.label}>
+              {t[
+                'com.affine.settings.workspace.user-identification.modal.speakerId'
+              ]() || 'Speaker ID'}
+            </label>
+            <Input
+              value={formData.speakerId}
+              onChange={value =>
+                setFormData(prev => ({ ...prev, speakerId: value }))
+              }
+              placeholder={
+                t[
+                  'com.affine.settings.workspace.user-identification.modal.speakerId.placeholder'
+                ]() || 'Enter speaker ID'
+              }
               disabled={isLoading}
             />
           </div>

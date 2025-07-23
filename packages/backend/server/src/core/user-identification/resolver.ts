@@ -85,6 +85,7 @@ export class UserIdentificationResolver {
         nickname: input.nickname,
         title: input.title,
         email: input.email,
+        speakerId: input.speakerId,
         imagesData: input.imagesData || [],
         createdBy: user.id,
       },
@@ -222,11 +223,21 @@ export class UserIdentificationResolver {
       );
       const replacer = new BulkDocumentReplacer(this.prisma);
 
-      await replacer.replaceInWorkspace(
-        identification.workspaceId,
-        oldNickname,
-        newNickname
-      );
+      // If speakerId is available, use speakerId-based replacement (more accurate)
+      if (identification.speakerId) {
+        await replacer.replaceInWorkspaceBySpeakerId(
+          identification.workspaceId,
+          identification.speakerId,
+          newNickname
+        );
+      } else {
+        // Fallback to text-based replacement for older records without speakerId
+        await replacer.replaceInWorkspace(
+          identification.workspaceId,
+          oldNickname,
+          newNickname
+        );
+      }
     }
 
     return updated;
