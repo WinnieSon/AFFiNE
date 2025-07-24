@@ -15,6 +15,22 @@ import {
 import { useLiveData, useService } from '@toeverything/infra';
 import { type ReactElement, type SVGAttributes, useCallback } from 'react';
 
+// Microsoft icon component
+const MicrosoftIcon = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M9.52381 9.52381H0V0H9.52381V9.52381Z" fill="#F25022" />
+    <path d="M20 9.52381H10.4762V0H20V9.52381Z" fill="#7FBA00" />
+    <path d="M9.52381 20H0V10.4762H9.52381V20Z" fill="#00A4EF" />
+    <path d="M20 20H10.4762V10.4762H20V20Z" fill="#FFB900" />
+  </svg>
+);
+
 const OAuthProviderMap: Record<
   OAuthProviderType,
   {
@@ -27,6 +43,10 @@ const OAuthProviderMap: Record<
 
   [OAuthProviderType.GitHub]: {
     icon: <GithubIcon />,
+  },
+
+  [OAuthProviderType.Microsoft]: {
+    icon: <MicrosoftIcon />,
   },
 
   [OAuthProviderType.OIDC]: {

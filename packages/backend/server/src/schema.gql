@@ -1435,6 +1435,7 @@ enum OAuthProviderType {
   Apple
   GitHub
   Google
+  Microsoft
   OIDC
 }
 

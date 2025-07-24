@@ -24,6 +24,7 @@ export enum OAuthProviderName {
   Google = 'google',
   GitHub = 'github',
   Apple = 'apple',
+  Microsoft = 'microsoft',
   OIDC = 'oidc',
 }
 declare global {
@@ -33,6 +34,7 @@ declare global {
         [OAuthProviderName.Google]: ConfigItem<OAuthProviderConfig>;
         [OAuthProviderName.GitHub]: ConfigItem<OAuthProviderConfig>;
         [OAuthProviderName.Apple]: ConfigItem<OAuthProviderConfig>;
+        [OAuthProviderName.Microsoft]: ConfigItem<OAuthProviderConfig>;
         [OAuthProviderName.OIDC]: ConfigItem<OAuthOIDCProviderConfig>;
       };
     };
@@ -99,5 +101,14 @@ defineModuleConfig('oauth', {
     },
     schema,
     link: 'https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app',
+  },
+  'providers.microsoft': {
+    desc: 'Microsoft OAuth provider config',
+    default: {
+      clientId: '',
+      clientSecret: '',
+    },
+    schema,
+    link: 'https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow',
   },
 });
