@@ -9,10 +9,11 @@ AFFiNE is an open-source, all-in-one workspace and knowledge management platform
 **Tech Stack:**
 
 - Frontend: React 19, TypeScript, Vite, Jotai, Emotion
-- Backend: NestJS, GraphQL, Prisma, Redis
-- Editor: BlockSuite (custom block-based editor framework)
+- Backend: NestJS, GraphQL, Prisma, Redis, BullMQ
+- Editor: BlockSuite (custom block-based editor framework with Yjs/CRDT)
 - Native: Rust modules via NAPI-rs
 - Platforms: Web, Desktop (Electron), Mobile (Capacitor)
+- Real-time: Socket.io, WebSocket, Yjs for collaboration
 
 ## Essential Commands
 
@@ -51,6 +52,9 @@ yarn lint:fix                                      # Fix linting issues
 
 # Build
 yarn build
+
+# Production deployment (see PRODUCTION_DEPLOYMENT.md for details)
+PUBLIC_PATH=/ BUILD_TYPE=canary yarn affine web build
 ```
 
 ### Backend Development
@@ -117,12 +121,15 @@ BUILD_TYPE=canary SKIP_WEB_BUILD=1 HOIST_NODE_MODULES=1 yarn affine @affine/elec
 
 1. **Dependency Injection Framework**: Custom DI system (`@toeverything/infra`) with Services, Stores, and Entities
 2. **Module System**: Feature modules in `packages/frontend/core/src/modules/`
+   - workspace, doc, editor, ai-button, collection, tag, comment, share-doc, quota, pdf, theme, navigation, media
 3. **State Management**:
    - Jotai for UI state
    - LiveData pattern for reactive data
-   - Yjs for document collaboration
-   - NBStore for local-first storage
+   - Yjs for document collaboration (CRDT)
+   - NBStore for local-first storage (IDB, SQLite, Cloud backends)
 4. **Editor Integration**: BlockSuite provides block-based editing with CRDT collaboration
+   - Custom blocks in `/blocksuite/affine/blocks/`
+   - Rich text, tables, code blocks, embeds, whiteboard/canvas
 5. **Sync System**: Local SQLite + sync engine for offline-first functionality
 6. **GraphQL API**: Type-safe, context-based with DataLoader optimization
 
@@ -151,6 +158,15 @@ BUILD_TYPE=canary SKIP_WEB_BUILD=1 HOIST_NODE_MODULES=1 yarn affine @affine/elec
 - E2E tests: Playwright in `/tests` directory
 - Run specific test: `yarn test path/to/test.spec.ts`
 - Coverage: `yarn test --coverage`
+
+### Production Deployment
+
+**For production deployment instructions, see [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)**
+
+Key points:
+- Use `PUBLIC_PATH=/` to avoid CDN dependencies
+- Run backend server separately
+- Use production server with API proxy for static deployment
 
 ## REST API Architecture on BlockSuite/Yjs
 
@@ -215,3 +231,29 @@ Y.applyUpdate(ydoc, binaryData);
 - Binary-first approach maintains CRDT compatibility
 - Separation of HTTP concerns from document operations
 - Performance optimized with caching and queued processing
+
+## Core Features
+
+### Document & Editor
+- **Block-based editing**: Rich text, tables, code, embeds, etc.
+- **Whiteboard/Canvas**: Edgeless mode for free-form content
+- **Real-time collaboration**: Yjs/CRDT for conflict-free editing
+- **Local-first**: All data stored locally with optional sync
+
+### AI Integration
+- **Copilot features**: AI-powered assistance
+- **Multiple providers**: OpenAI, Anthropic, etc.
+- **Content generation**: AI-powered search and writing
+- **Transcription**: Audio/video to text
+
+### Organization
+- **Collections**: Folder-like organization
+- **Tags**: Flexible tagging system
+- **Comments**: Document commenting
+- **Sharing**: Public and private sharing options
+
+### Platform Support
+- **Web**: Full-featured web app
+- **Desktop**: Electron app with native features
+- **Mobile**: iOS/Android via Capacitor
+- **Self-hosting**: Complete deployment support

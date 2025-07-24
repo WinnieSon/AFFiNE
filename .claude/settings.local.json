@@ -93,7 +93,13 @@
       "Bash(yarn --version)",
       "Bash(corepack enable)",
       "Bash(corepack prepare:*)",
-      "Bash(npx husky:*)"
+      "Bash(npx husky:*)",
+      "Bash(npx serve:*)",
+      "Bash(npx:*)",
+      "Bash(brew services info:*)",
+      "Bash(nginx:*)",
+      "Bash(npm install:*)",
+      "Bash(npm init:*)"
     ],
     "deny": []
   }
