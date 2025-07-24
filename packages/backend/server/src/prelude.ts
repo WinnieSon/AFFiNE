@@ -1,7 +1,13 @@
 import 'reflect-metadata';
 
+import { webcrypto } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+// Make crypto available globally for NestJS GraphQL module compatibility
+if (!globalThis.crypto) {
+  globalThis.crypto = webcrypto as any;
+}
 
 import { config } from 'dotenv';
 

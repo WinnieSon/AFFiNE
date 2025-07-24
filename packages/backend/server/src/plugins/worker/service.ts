@@ -5,12 +5,15 @@ import { fixUrl, OriginRules } from './utils';
 
 @Injectable()
 export class WorkerService {
-  allowedOrigins: OriginRules = [...this.url.allowedOrigins];
+  allowedOrigins: OriginRules = [];
 
   constructor(
     private readonly config: Config,
     private readonly url: URLHelper
-  ) {}
+  ) {
+    // Initialize after dependencies are injected
+    this.allowedOrigins = [...this.url.allowedOrigins];
+  }
 
   @OnEvent('config.init')
   onConfigInit() {
