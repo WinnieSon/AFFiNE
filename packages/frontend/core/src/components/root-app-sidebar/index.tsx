@@ -46,7 +46,6 @@ import {
   workspaceWrapper,
 } from './index.css';
 import { InviteMembersButton } from './invite-members-button';
-import { AppSidebarJournalButton } from './journal-button';
 import { NotificationButton } from './notification-button';
 import { RecordingStatus } from './recording-status';
 import { SidebarAudioPlayer } from './sidebar-audio-player';
@@ -200,7 +199,6 @@ export const RootAppSidebar = memo((): ReactElement => {
           <AddPageButton />
         </div>
         <AllDocsButton />
-        {/* <AppSidebarJournalButton /> */}
         {sessionStatus === 'authenticated' && <NotificationButton />}
         <AIChatButton />
         <MenuItem
@@ -235,7 +233,7 @@ export const RootAppSidebar = memo((): ReactElement => {
           <InviteMembersButton />
           <TemplateDocEntrance />
           <ExternalMenuLinkItem
-            href="https://affine.pro/blog?tag=Release+Note"
+            href="https://palcon.ai/blog/"
             icon={<JournalIcon />}
             label={t['com.affine.app-sidebar.learn-more']()}
           />

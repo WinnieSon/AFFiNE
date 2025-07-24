@@ -5,56 +5,6 @@ import * as Y from 'yjs';
 export class BulkDocumentReplacer {
   constructor(private readonly prisma: PrismaClient) {}
 
-  private async isDocumentInTrash(
-    workspaceId: string,
-    docId: string
-  ): Promise<boolean> {
-    try {
-      // Get the workspace root document to check trash status
-      const rootSnapshot = await this.prisma.snapshot.findFirst({
-        where: {
-          workspaceId,
-          id: workspaceId, // Root doc has same ID as workspace
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-
-      if (!rootSnapshot?.blob) {
-        return false; // If no root doc, assume not in trash
-      }
-
-      // Load root document
-      const rootDoc = new Y.Doc();
-      Y.applyUpdate(rootDoc, Buffer.from(rootSnapshot.blob));
-
-      // Get pages metadata
-      const meta = rootDoc.getMap('meta');
-      const pages = meta.get('pages') as Y.Array<Y.Map<any>>;
-
-      if (!pages) {
-        return false;
-      }
-
-      // Find the page entry for this document
-      for (const page of pages) {
-        if (page.get('id') === docId) {
-          const isInTrash = page.get('trash') === true;
-          return isInTrash;
-        }
-      }
-
-      return false; // Document not found in metadata, assume not in trash
-    } catch (error) {
-      console.error(
-        `[BulkDocumentReplacer] Error checking trash status for ${docId}:`,
-        error
-      );
-      return false; // On error, assume not in trash to avoid skipping documents
-    }
-  }
-
   private async getNonTrashDocumentIds(
     workspaceId: string
   ): Promise<Set<string>> {
