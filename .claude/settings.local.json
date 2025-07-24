@@ -84,7 +84,16 @@
       "Bash(git stash:*)",
       "Bash(git unstage:*)",
       "Bash(LEFTHOOK=0 git commit -m \"$(cat <<''EOF''\nfix: correct edgeless shape text replacement by using original speaker names\n\n- Store original speakerName/participantName values before any updates\n- Compare Y.Text content against original names, not updated names\n- Add safety checks to detect incorrect name comparisons\n- Handle cases where speakerName property might be undefined\n- Prevent duplicate processing of shape text fields\n\nThis fixes the issue where edgeless conversation and participant nodes\nweren''t being updated during bulk speaker replacement.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(LEFTHOOK=0 git commit -m \"fix: resolve Invalid access errors in meeting note generation\n\n- Fixed Y.Text length access errors by using delta operations\n- Build all action item content as single delta to avoid multiple length accesses\n- Removed debug logging after identifying the issue\n- The error occurred when trying to access itemText.length before Y.Text was properly initialized\n\nThis resolves the 2 remaining ''Invalid access: Add Yjs type to a document before reading data'' errors that were occurring during action item text generation with assignees.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")"
+      "Bash(LEFTHOOK=0 git commit -m \"fix: resolve Invalid access errors in meeting note generation\n\n- Fixed Y.Text length access errors by using delta operations\n- Build all action item content as single delta to avoid multiple length accesses\n- Removed debug logging after identifying the issue\n- The error occurred when trying to access itemText.length before Y.Text was properly initialized\n\nThis resolves the 2 remaining ''Invalid access: Add Yjs type to a document before reading data'' errors that were occurring during action item text generation with assignees.\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")",
+      "Bash(nvm install:*)",
+      "Bash(yarn install:*)",
+      "Bash(yarn husky:*)",
+      "Bash(cat:*)",
+      "Bash(yarn cache:*)",
+      "Bash(yarn --version)",
+      "Bash(corepack enable)",
+      "Bash(corepack prepare:*)",
+      "Bash(npx husky:*)"
     ],
     "deny": []
   }
