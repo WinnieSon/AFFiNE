@@ -286,7 +286,7 @@ export async function createMeetingMindMapDocument(
   // Define central node position early for viewport calculation
   const centralNodeX = 1400;
   const centralNodeY = 400;
-
+  
   // Create comprehensive speaker mapping for all sections early
   const allSpeakerIds: string[] = [];
 
@@ -322,7 +322,6 @@ export async function createMeetingMindMapDocument(
 
   // Create Y.Doc and wrap all operations in a transaction
   const doc = new Y.Doc();
-
   const blocks = doc.getMap('blocks');
 
   // Create IDs
@@ -332,7 +331,6 @@ export async function createMeetingMindMapDocument(
 
   // Create root page block
   const pageBlock = new Y.Map();
-
   pageBlock.set('sys:id', pageId);
   pageBlock.set('sys:flavour', 'affine:page');
   pageBlock.set('sys:version', 2);
@@ -341,9 +339,7 @@ export async function createMeetingMindMapDocument(
   blocks.set(pageId, pageBlock);
 
   const pageChildren = new Y.Array();
-
   pageBlock.set('sys:children', pageChildren);
-
   pageChildren.push([surfaceId, noteId]);
 
   // Set page title with date/time format
@@ -902,8 +898,8 @@ export async function createMeetingMindMapDocument(
       let displayText = itemText;
       if (assignees.length > 0) {
         // Map assignee IDs to names using globalSpeakerIdToName
-        const assigneeNames = assignees.map(
-          assigneeId => globalSpeakerIdToName?.get(assigneeId) || assigneeId
+        const assigneeNames = assignees.map(assigneeId => 
+          globalSpeakerIdToName?.get(assigneeId) || assigneeId
         );
         // Format: [화자1] 액션 텍스트
         displayText = `[${assigneeNames.join(', ')}] ${itemText}`;
@@ -1205,10 +1201,10 @@ export async function createMeetingMindMapDocument(
 
     // Build the text content with delta operations
     const delta = [];
-
+    
     // Add prefix
     delta.push({ insert: '👥 참석자 : ' });
-
+    
     // Add participants
     data.participants?.forEach((participantId, index) => {
       if (index > 0) {
@@ -1391,11 +1387,8 @@ export async function createMeetingMindMapDocument(
       const assignees =
         typeof item === 'object' && item.assignee ? item.assignee : [];
 
-      // Build all content as a single delta operation to avoid length access issues
-      const contentDelta = [];
-
-      // Add action text
-      contentDelta.push({ insert: actionText });
+      // Insert action text first
+      itemText.insert(0, actionText);
 
       // Add assignees with code block formatting if available
       if (assignees.length > 0) {
@@ -1404,27 +1397,26 @@ export async function createMeetingMindMapDocument(
           const assigneeName =
             globalSpeakerIdToName?.get(assigneeId) || assigneeId;
 
-          // Add separator
           if (index === 0) {
-            contentDelta.push({ insert: ' ' });
+            itemText.insert(itemText.length, ' ');
           } else {
-            contentDelta.push({ insert: ', ' });
+            itemText.insert(itemText.length, ', ');
           }
 
-          // Add assignee with formatting
-          contentDelta.push({
-            insert: assigneeName,
-            attributes: {
-              code: true,
-              speakerId: assigneeId,
+          // Insert assignee with code block styling and metadata
+          const assigneeDelta = [
+            {
+              insert: assigneeName,
+              attributes: {
+                code: true,
+                speakerId: assigneeId,
+              },
             },
-          });
+          ];
+
+          itemText.applyDelta(assigneeDelta);
         });
       }
-
-      // Apply all content at once
-      itemText.applyDelta(contentDelta);
-
       itemBlock.set('prop:text', itemText);
 
       allBlocks[itemId] = itemBlock;
@@ -1612,7 +1604,7 @@ export async function createMeetingMindMapDocument(
   // Create pages metadata
   const pages = new Y.Array();
   meta.set('pages', pages); // Set pages array to meta first
-
+  
   const pageMeta = new Y.Map();
   const currentTime = Date.now();
   pageMeta.set('id', pageId);
@@ -1620,12 +1612,12 @@ export async function createMeetingMindMapDocument(
   pageMeta.set('createDate', currentTime);
   pageMeta.set('updatedDate', currentTime);
   pageMeta.set('tags', new Y.Array());
-
+  
   // Set viewport to center on the central node
   // Calculate center position considering the node's dimensions
   const viewportMeta = new Y.Map();
   viewportMeta.set('centerX', centralNodeX + 150); // centerX = nodeX + width/2
-  viewportMeta.set('centerY', centralNodeY + 50); // centerY = nodeY + height/2
+  viewportMeta.set('centerY', centralNodeY + 50);  // centerY = nodeY + height/2
   viewportMeta.set('zoom', 0.8); // Default zoom level
   pageMeta.set('viewport', viewportMeta);
 
