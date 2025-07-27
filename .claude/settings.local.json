@@ -99,7 +99,11 @@
       "Bash(brew services info:*)",
       "Bash(nginx:*)",
       "Bash(npm install:*)",
-      "Bash(npm init:*)"
+      "Bash(npm init:*)",
+      "Bash(yarn cache:*)",
+      "Bash(yarn nodemon:*)",
+      "Bash(NODE_OPTIONS=\"--loader tsx\" yarn nodemon ./src/index.ts)",
+      "Bash(NODE_OPTIONS=\"--import tsx\" yarn nodemon ./src/index.ts)"
     ],
     "deny": []
   }

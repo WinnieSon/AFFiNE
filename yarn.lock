@@ -763,6 +763,7 @@ __metadata:
   resolution: "@affine/monorepo@workspace:."
   dependencies:
     "@affine-tools/cli": "workspace:*"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.7.4"
     "@capacitor/cli": "npm:^7.0.0"
     "@eslint/js": "npm:^9.16.0"
     "@faker-js/faker": "npm:^9.3.0"
@@ -798,6 +799,7 @@ __metadata:
     prettier: "npm:^3.4.2"
     semver: "npm:^7.6.3"
     serve: "npm:^14.2.4"
+    tsx: "npm:^4.20.3"
     typescript: "npm:^5.7.2"
     typescript-eslint: "npm:^8.18.0"
     unplugin-swc: "npm:^1.5.1"
@@ -33124,7 +33126,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsx@npm:^4.19.2":
+"tsx@npm:^4.19.2, tsx@npm:^4.20.3":
   version: 4.20.3
   resolution: "tsx@npm:4.20.3"
   dependencies:
