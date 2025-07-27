@@ -1,8 +1,11 @@
 {
   "extends": "../../../tsconfig.node.json",
   "compilerOptions": {
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "composite": true
   },
-  "include": ["index.d.ts"],
+  "include": [
+    "index.d.ts"
+  ],
   "references": []
 }

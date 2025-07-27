@@ -1,8 +1,18 @@
 {
   "extends": "../../tsconfig.node.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "outDir": "dist",
+    "composite": true
   },
-  "files": ["index.ts"],
-  "references": [{ "path": "../cli" }, { "path": "../utils" }]
+  "files": [
+    "index.ts"
+  ],
+  "references": [
+    {
+      "path": "../cli"
+    },
+    {
+      "path": "../utils"
+    }
+  ]
 }

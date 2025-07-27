@@ -4,17 +4,36 @@
     "noUncheckedIndexedAccess": true,
     "rootDir": "./src",
     "outDir": "./dist",
-    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
+    "composite": true
   },
-  "include": ["./src"],
+  "include": [
+    "./src"
+  ],
   "references": [
-    { "path": "../components" },
-    { "path": "../ext-loader" },
-    { "path": "../rich-text" },
-    { "path": "../shared" },
-    { "path": "../data-view" },
-    { "path": "../../framework/global" },
-    { "path": "../../framework/std" },
-    { "path": "../../framework/store" }
+    {
+      "path": "../components"
+    },
+    {
+      "path": "../ext-loader"
+    },
+    {
+      "path": "../rich-text"
+    },
+    {
+      "path": "../shared"
+    },
+    {
+      "path": "../data-view"
+    },
+    {
+      "path": "../../framework/global"
+    },
+    {
+      "path": "../../framework/std"
+    },
+    {
+      "path": "../../framework/store"
+    }
   ]
 }

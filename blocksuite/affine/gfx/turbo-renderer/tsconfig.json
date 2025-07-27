@@ -3,12 +3,21 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
+    "composite": true
   },
-  "include": ["./src"],
+  "include": [
+    "./src"
+  ],
   "references": [
-    { "path": "../../../framework/global" },
-    { "path": "../../../framework/std" },
-    { "path": "../../../framework/store" }
+    {
+      "path": "../../../framework/global"
+    },
+    {
+      "path": "../../../framework/std"
+    },
+    {
+      "path": "../../../framework/store"
+    }
   ]
 }

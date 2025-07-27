@@ -3,18 +3,39 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
+    "composite": true
   },
-  "include": ["./src"],
+  "include": [
+    "./src"
+  ],
   "references": [
-    { "path": "../../blocks/database" },
-    { "path": "../../blocks/surface" },
-    { "path": "../../blocks/table" },
-    { "path": "../../components" },
-    { "path": "../../ext-loader" },
-    { "path": "../../model" },
-    { "path": "../../shared" },
-    { "path": "../../../framework/global" },
-    { "path": "../../../framework/std" }
+    {
+      "path": "../../blocks/database"
+    },
+    {
+      "path": "../../blocks/surface"
+    },
+    {
+      "path": "../../blocks/table"
+    },
+    {
+      "path": "../../components"
+    },
+    {
+      "path": "../../ext-loader"
+    },
+    {
+      "path": "../../model"
+    },
+    {
+      "path": "../../shared"
+    },
+    {
+      "path": "../../../framework/global"
+    },
+    {
+      "path": "../../../framework/std"
+    }
   ]
 }

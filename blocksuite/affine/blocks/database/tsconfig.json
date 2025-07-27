@@ -4,22 +4,51 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "composite": true
   },
-  "include": ["./src"],
+  "include": [
+    "./src"
+  ],
   "references": [
-    { "path": "../../components" },
-    { "path": "../../ext-loader" },
-    { "path": "../../inlines/preset" },
-    { "path": "../../inlines/reference" },
-    { "path": "../../model" },
-    { "path": "../../rich-text" },
-    { "path": "../../shared" },
-    { "path": "../../widgets/drag-handle" },
-    { "path": "../../widgets/slash-menu" },
-    { "path": "../../data-view" },
-    { "path": "../../../framework/global" },
-    { "path": "../../../framework/std" },
-    { "path": "../../../framework/store" }
+    {
+      "path": "../../components"
+    },
+    {
+      "path": "../../ext-loader"
+    },
+    {
+      "path": "../../inlines/preset"
+    },
+    {
+      "path": "../../inlines/reference"
+    },
+    {
+      "path": "../../model"
+    },
+    {
+      "path": "../../rich-text"
+    },
+    {
+      "path": "../../shared"
+    },
+    {
+      "path": "../../widgets/drag-handle"
+    },
+    {
+      "path": "../../widgets/slash-menu"
+    },
+    {
+      "path": "../../data-view"
+    },
+    {
+      "path": "../../../framework/global"
+    },
+    {
+      "path": "../../../framework/std"
+    },
+    {
+      "path": "../../../framework/store"
+    }
   ]
 }

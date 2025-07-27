@@ -286,7 +286,7 @@ export async function createMeetingMindMapDocument(
   // Define central node position early for viewport calculation
   const centralNodeX = 1400;
   const centralNodeY = 400;
-  
+
   // Create comprehensive speaker mapping for all sections early
   const allSpeakerIds: string[] = [];
 
@@ -535,7 +535,7 @@ export async function createMeetingMindMapDocument(
         id: dateNodeId,
         x: 2100,
         y: infoDetailY,
-        width: 200,
+        width: 240,
         height: 40,
         text: `${data.date || ''} ${data.time || ''}`.trim(),
         fillColor: '--affine-palette-shape-white',
@@ -898,8 +898,8 @@ export async function createMeetingMindMapDocument(
       let displayText = itemText;
       if (assignees.length > 0) {
         // Map assignee IDs to names using globalSpeakerIdToName
-        const assigneeNames = assignees.map(assigneeId => 
-          globalSpeakerIdToName?.get(assigneeId) || assigneeId
+        const assigneeNames = assignees.map(
+          assigneeId => globalSpeakerIdToName?.get(assigneeId) || assigneeId
         );
         // Format: [화자1] 액션 텍스트
         displayText = `[${assigneeNames.join(', ')}] ${itemText}`;
@@ -1201,10 +1201,10 @@ export async function createMeetingMindMapDocument(
 
     // Build the text content with delta operations
     const delta = [];
-    
+
     // Add prefix
     delta.push({ insert: '👥 참석자 : ' });
-    
+
     // Add participants
     data.participants?.forEach((participantId, index) => {
       if (index > 0) {
@@ -1604,7 +1604,7 @@ export async function createMeetingMindMapDocument(
   // Create pages metadata
   const pages = new Y.Array();
   meta.set('pages', pages); // Set pages array to meta first
-  
+
   const pageMeta = new Y.Map();
   const currentTime = Date.now();
   pageMeta.set('id', pageId);
@@ -1612,12 +1612,12 @@ export async function createMeetingMindMapDocument(
   pageMeta.set('createDate', currentTime);
   pageMeta.set('updatedDate', currentTime);
   pageMeta.set('tags', new Y.Array());
-  
+
   // Set viewport to center on the central node
   // Calculate center position considering the node's dimensions
   const viewportMeta = new Y.Map();
   viewportMeta.set('centerX', centralNodeX + 150); // centerX = nodeX + width/2
-  viewportMeta.set('centerY', centralNodeY + 50);  // centerY = nodeY + height/2
+  viewportMeta.set('centerY', centralNodeY + 50); // centerY = nodeY + height/2
   viewportMeta.set('zoom', 0.8); // Default zoom level
   pageMeta.set('viewport', viewportMeta);
 
