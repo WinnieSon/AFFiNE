@@ -316,7 +316,12 @@ export function createHTMLTargetConfig(
           extractComments: true,
           terserOptions: {
             ecma: 2020,
-            compress: { unused: true },
+            compress: { 
+              unused: true,
+              drop_console: !buildConfig.debug,
+              drop_debugger: !buildConfig.debug,
+              pure_funcs: !buildConfig.debug ? ['console.log', 'console.debug', 'console.warn'] : []
+            },
             mangle: { keep_classnames: true },
           },
         }),
@@ -488,7 +493,12 @@ export function createWorkerTargetConfig(
           extractComments: true,
           terserOptions: {
             ecma: 2020,
-            compress: { unused: true },
+            compress: { 
+              unused: true,
+              drop_console: !buildConfig.debug,
+              drop_debugger: !buildConfig.debug,
+              pure_funcs: !buildConfig.debug ? ['console.log', 'console.debug', 'console.warn'] : []
+            },
             mangle: { keep_classnames: true },
           },
         }),

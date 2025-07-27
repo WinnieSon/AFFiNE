@@ -257,3 +257,110 @@ Y.applyUpdate(ydoc, binaryData);
 - **Desktop**: Electron app with native features
 - **Mobile**: iOS/Android via Capacitor
 - **Self-hosting**: Complete deployment support
+
+## Important Fixes and Solutions
+
+### TypeScript Composite Configuration
+All tsconfig.json files in project references must have `"composite": true`:
+```bash
+# After modifying tsconfig files, clear TypeScript cache:
+yarn affine clean
+yarn install
+```
+
+### Reader Package DI Container Fix
+The `@affine/reader` package requires proper DI initialization:
+```typescript
+// WRONG - causes "Cannot read properties of undefined (reading 'container')"
+const extensions = getStoreManager().get('store');
+
+// CORRECT - properly initializes the container
+const extensions = getStoreManager().config.init().value.get('store');
+extensions.forEach(ext => {
+  ext.setup(container);
+});
+```
+
+### Production Build Configuration
+For true production builds without debug logs:
+```bash
+# Build with all optimizations
+NODE_ENV=production PUBLIC_PATH=/ BUILD_TYPE=canary yarn affine web build
+
+# Run production server
+yarn serve:prod  # Uses production-server.js from packages/frontend/apps/web/
+```
+
+Webpack configuration automatically removes console logs in production:
+- `drop_console: true` - Removes all console.* calls
+- `drop_debugger: true` - Removes debugger statements
+- `pure_funcs: ['console.log', 'console.debug', 'console.warn']` - Additional cleanup
+
+### Known Issues and Solutions
+
+#### 1. ESLint Pre-commit Hook Failures
+Many existing files have ESLint violations. Solutions:
+- Use `git commit --no-verify` when necessary
+- Run `yarn lint:fix` to auto-fix issues
+- Fix specific issues manually
+
+#### 2. Memory Issues During Build
+```bash
+# Increase Node memory for large builds
+NODE_OPTIONS="--max-old-space-size=8192" yarn build
+```
+
+#### 3. Native Module Build Required
+Always build native modules after fresh clone:
+```bash
+yarn affine @affine/native build
+yarn affine @affine/server-native build
+yarn affine init
+```
+
+#### 4. Production Server Setup
+The `production-server.js` must be in `packages/frontend/apps/web/` (NOT in dist/):
+- Serves static files from `dist/` subdirectory
+- Proxies `/api/*`, `/graphql`, `/socket.io/*` to backend
+- Supports SPA routing with index.html fallback
+- Configurable via environment variables:
+  - `PORT` (default: 8080)
+  - `BACKEND_URL` (default: http://localhost:3010)
+  - `LOG_LEVEL` (error/info/debug)
+
+### Build Troubleshooting
+
+#### Clean Build Process
+```bash
+# Complete clean build
+yarn affine clean
+yarn install
+yarn affine @affine/native build
+yarn affine @affine/server-native build
+yarn affine init
+NODE_ENV=production PUBLIC_PATH=/ BUILD_TYPE=canary yarn affine web build
+```
+
+#### Verify Production Build
+- Check browser console - should have NO debug logs
+- Check network tab - assets should load from local paths (not CDN)
+- Check bundle size - should be optimized and minified
+
+### Architecture Insights
+
+#### Dependency Injection (DI) Pattern
+AFFiNE uses a custom DI system throughout:
+- Services registered in Container
+- Provider pattern for dependency resolution
+- Extensions must be properly initialized with `config.init()`
+
+#### Local-First Storage
+- NBStore handles local storage with multiple backends
+- IDB (IndexedDB) for web
+- SQLite for desktop/mobile
+- Cloud sync as optional layer
+
+#### Yjs/CRDT Integration
+- All documents stored as Yjs binary updates
+- Snapshots created periodically for performance
+- REST APIs work with binary data, not BlockSuite objects directly

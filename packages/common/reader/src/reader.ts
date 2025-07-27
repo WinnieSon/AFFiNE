@@ -118,33 +118,36 @@ function generateMarkdownPreviewBuilder(
   };
 
   const container = new Container();
-  getStoreManager()
-    .get('store')
-    .forEach(ext => {
-      ext.setup(container);
-    });
-
+  
+  // Get all store extensions and set them up - use config.init() to ensure proper initialization
+  const extensions = getStoreManager().config.init().value.get('store');
+  extensions.forEach(ext => {
+    ext.setup(container);
+  });
+  
+  // Make sure the container is properly initialized
   const provider = container.provider();
-  const markdownAdapter = new MarkdownAdapter(
-    new Transformer({
-      schema: blocksuiteSchema,
-      blobCRUD: {
-        delete: () => Promise.resolve(),
-        get: () => Promise.resolve(null),
-        list: () => Promise.resolve([]),
-        set: () => Promise.resolve(''),
+  
+  // Create transformer with provider
+  const transformer = new Transformer({
+    schema: blocksuiteSchema,
+    blobCRUD: {
+      delete: () => Promise.resolve(),
+      get: () => Promise.resolve(null),
+      list: () => Promise.resolve([]),
+      set: () => Promise.resolve(''),
+    },
+    docCRUD: {
+      create: () => {
+        throw new Error('Not implemented');
       },
-      docCRUD: {
-        create: () => {
-          throw new Error('Not implemented');
-        },
-        get: () => null,
-        delete: () => {},
-      },
-      middlewares: [docLinkBaseURLMiddleware, titleMiddleware],
-    }),
-    provider
-  );
+      get: () => null,
+      delete: () => {},
+    },
+    middlewares: [docLinkBaseURLMiddleware, titleMiddleware],
+  });
+  
+  const markdownAdapter = new MarkdownAdapter(transformer, provider);
 
   const markdownPreviewCache = new WeakMap<BlockDocumentInfo, string | null>();
 

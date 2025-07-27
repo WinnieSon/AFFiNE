@@ -21,6 +21,11 @@ if (typeof window !== 'undefined') {
     debug.enable('*,-micromark');
     console.warn('Debug logs enabled');
   }
+  
+  // Disable all debug logs in production unless explicitly enabled
+  if (process.env.NODE_ENV === 'production' && !sessionStorage.getItem(SESSION_KEY)) {
+    debug.disable();
+  }
 }
 
 export class DebugLogger {

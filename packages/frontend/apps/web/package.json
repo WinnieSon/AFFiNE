@@ -6,7 +6,10 @@
   "browser": "src/index.tsx",
   "scripts": {
     "build": "affine bundle",
-    "dev": "affine bundle --dev"
+    "build:prod": "cross-env NODE_ENV=production PUBLIC_PATH=/ BUILD_TYPE=canary affine bundle",
+    "dev": "affine bundle --dev",
+    "serve:prod": "node production-server.js",
+    "serve:prod:debug": "cross-env LOG_LEVEL=debug node production-server.js"
   },
   "dependencies": {
     "@affine/component": "workspace:*",

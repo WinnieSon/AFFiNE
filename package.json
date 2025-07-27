@@ -35,9 +35,9 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -b tsconfig.json --verbose",
     "postinstall": "yarn affine init && yarn husky",
-    "build:prod": "PUBLIC_PATH=/ BUILD_TYPE=canary yarn affine web build",
-    "serve:prod": "cd packages/frontend/apps/web/dist && LOG_LEVEL=error node production-server.js",
-    "serve:prod:debug": "cd packages/frontend/apps/web/dist && LOG_LEVEL=debug node production-server.js"
+    "build:prod": "NODE_ENV=production PUBLIC_PATH=/ BUILD_TYPE=canary yarn affine web build",
+    "serve:prod": "cd packages/frontend/apps/web && LOG_LEVEL=error node production-server.js",
+    "serve:prod:debug": "cd packages/frontend/apps/web && LOG_LEVEL=debug node production-server.js"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown --cache",
